@@ -8,17 +8,20 @@ import {
   InvalidPasswordError,
 } from './password.js';
 import { writeAuthEvent, type AuditContext } from './audit.js';
-import type { Credentials } from './schemas.js';
+import type { Credentials, SignupInput } from './schemas.js';
+import { normalizeBusinessName } from './business-name.js';
 
 export function createAuthService(users: UserStore, security: SecurityStore) {
   return {
-    async signup(credentials: Credentials, context: AuditContext) {
+    async signup(credentials: SignupInput, context: AuditContext) {
+      const businessName = normalizeBusinessName(credentials.businessName);
       if (!validPassword(credentials.password))
         throw new InvalidPasswordError();
       const user = await users.create(
         credentials.email.trim().toLowerCase(),
         await hashPassword(credentials.password),
         'user',
+        businessName,
       );
       await writeAuthEvent(
         security,

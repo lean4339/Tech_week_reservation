@@ -3,6 +3,35 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { hashPassword } from '../dist/auth/password.js';
 
+test('signup requires a bounded business name and rejects invalid names without creating users', async (t) => {
+  const { app, users, security } = setup(t);
+  for (const businessName of [
+    undefined,
+    null,
+    123,
+    {},
+    '',
+    ' ',
+    'A',
+    'a'.repeat(121),
+    'Acme\r\nInc',
+  ]) {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/auth/signup',
+      headers,
+      payload: {
+        email: 'business@example.test',
+        password,
+        ...(businessName === undefined ? {} : { businessName }),
+      },
+    });
+    assert.equal(response.statusCode, 400);
+  }
+  assert.equal(await users.count(), 0);
+  assert.equal(security.records.length, 0);
+});
+
 test('session storage failure cannot record a successful login or issue a cookie', async (t) => {
   const { app, users, security } = setup(t);
   await users.create(
@@ -37,7 +66,12 @@ test('signup cannot assign admin, permissions, ids or unknown properties', async
       method: 'POST',
       url: '/auth/signup',
       headers,
-      payload: { email: 'evil@example.com', password, ...extra },
+      payload: {
+        email: 'evil@example.com',
+        password,
+        businessName: 'Empresa de prueba',
+        ...extra,
+      },
     });
     assert.equal(result.statusCode, 400);
   }
@@ -81,7 +115,7 @@ test('invalid JSON, invalid shapes, long bodies and simple content types are rej
           method: 'POST',
           url: '/auth/signup',
           headers,
-          payload,
+          payload: { ...payload, businessName: 'Empresa de prueba' },
         })
       ).statusCode,
       400,
@@ -259,7 +293,11 @@ test('account and IP rate limits reject requests before issuing sessions', async
         method: 'POST',
         url: '/auth/signup',
         headers,
-        payload: { email: 'new@example.com', password },
+        payload: {
+          email: 'new@example.com',
+          password,
+          businessName: 'Empresa de prueba',
+        },
       })
     ).statusCode,
     429,

@@ -14,12 +14,17 @@ const common = new Set([
 ]);
 
 export function validPassword(password: string) {
-  return (
-    [...password].length >= 15 &&
-    [...password].length <= 128 &&
-    Buffer.byteLength(password, 'utf8') <= 512 &&
-    !common.has(password.toLowerCase())
-  );
+  return passwordValidationError(password) === undefined;
+}
+
+export function passwordValidationError(password: string): string | undefined {
+  const length = [...password].length;
+  if (length < 15) return 'La contraseña debe tener al menos 15 caracteres.';
+  if (length > 128) return 'La contraseña no puede superar los 128 caracteres.';
+  if (Buffer.byteLength(password, 'utf8') > 512)
+    return 'La contraseña no puede superar los 512 bytes en UTF-8.';
+  if (common.has(password.toLowerCase()))
+    return 'Esa contraseña está en la lista de contraseñas comunes bloqueadas. Elegí otra.';
 }
 
 async function derive(password: string, salt: Buffer): Promise<Buffer> {

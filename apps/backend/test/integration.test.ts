@@ -67,13 +67,33 @@ test('real PostgreSQL migrations, constraints, Redis sessions, TTLs, audit and H
   const email = `${randomUUID()}@example.test`;
   const password = 'An isolated integration passphrase!';
   const hash = await hashPassword(password);
+  const businessName = "Café O'Connor; DROP TABLE auth.users; --";
   const duplicates = await Promise.all([
-    users.create(email, hash, 'user'),
-    users.create(email, hash, 'user'),
+    users.create(email, hash, 'user', businessName),
+    users.create(email, hash, 'user', businessName),
   ]);
   assert.equal(duplicates.filter(Boolean).length, 1);
   const user = duplicates.find(Boolean)!;
   ids.push(user.id);
+  assert.equal(user.business_name, businessName);
+  assert.equal((await users.findById(user.id))!.business_name, businessName);
+  for (const invalid of ['', 'A', ' padded ', 'a'.repeat(121), 'Acme\nInc']) {
+    await assert.rejects(
+      pool.query('UPDATE auth.users SET business_name = $1 WHERE id = $2', [
+        invalid,
+        user.id,
+      ]),
+    );
+  }
+  assert.equal((await users.findByEmail(email))!.business_name, businessName);
+  const legacy = await users.create(
+    `${randomUUID()}@example.test`,
+    hash,
+    'admin',
+  );
+  assert(legacy);
+  ids.push(legacy.id);
+  assert.equal(legacy.business_name, null);
   assert.equal(await users.findByEmail("' OR true --"), null);
   await assert.rejects(
     pool.query('UPDATE auth.users SET role = $1 WHERE id = $2', [
@@ -97,6 +117,7 @@ test('real PostgreSQL migrations, constraints, Redis sessions, TTLs, audit and H
     payload: { email, password },
   });
   assert.equal(login.statusCode, 200);
+  assert.equal(login.json().user.businessName, businessName);
   const cookie = String(login.headers['set-cookie']).split(';')[0]!;
   const token = cookie.split('=')[1]!;
   tokens.push(token);

@@ -200,3 +200,53 @@ and dependency advisory checks have the limitations listed above.
 - [Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 - [Logging](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
+
+### Actualización: nombre de empresa en la cuenta
+
+Se agregó `auth.users.business_name` mediante una migración nueva, conservando
+las cuentas existentes con `NULL`. El registro requiere `businessName`; valida
+tipo, longitud y caracteres de control, y normaliza espacios externos. El nombre
+no modifica la identidad, el rol ni los permisos. Las consultas usan parámetros
+SQL, los registros duplicados no reemplazan el nombre y el frontend renderiza
+el valor como texto de React. Mapeo principal: A01/A05/A07/A08:2025.
+
+Con el acceso local disponible se aplicó la migración de desarrollo y se ejecutó
+la integración en contenedores de prueba independientes: **2 pruebas aprobadas**,
+incluidas las restricciones reales de PostgreSQL, el nombre con contenido similar
+a SQL, la compatibilidad con nombres nulos y sesiones Redis. Pasaron también
+**43 pruebas locales y 5 escenarios E2E completos**, incluyendo un nombre con
+marcado HTML que se muestra como texto sin crear elementos. El test de registro
+y login necesitaba esperar la navegación a `/login` antes de completar los campos;
+esa sincronización fue corregida. TypeScript, ESLint de ambas apps y formato pasan.
+
+Estos resultados actualizan los bloqueos históricos de integración, navegador
+y ESLint registrados más abajo. No reemplazan la revisión pendiente de avisos
+de dependencias ni demuestran ausencia de todas las vulnerabilidades.
+
+English: business names are stored on existing user accounts, validated at signup,
+queried with SQL parameters, and rendered as React text. Existing accounts retain
+null names; names never grant permissions. The development migration was applied.
+43 local tests, 2 real integration tests, 5 complete browser E2E scenarios, both
+TypeScript/ESLint checks and formatting passed. These results supersede the earlier
+environment limitations for those checks; dependency advisories remain unverified.
+
+### Diagnóstico y pruebas de arranque
+
+Se comprobó vía HTTP que `/login` responde 200, el backend en 3001 rechaza la
+conexión y el proxy `/api/health` devuelve 500. Las URLs y puertos locales de
+configuración coinciden. Desde esta sesión, Docker rechaza el acceso a su socket
+y la conexión Redis falla con `EPERM`; esto impide afirmar que el backend se haya
+levantado o identificar la causa de su caída en una terminal externa.
+
+Se corrigió una pérdida de diagnóstico: ioredis emitía el error original y luego
+rechazaba `connect()` con `Connection is closed`. `db/redis.ts` conserva ahora el
+error inicial. `startup.ts` registra etapa, código de una lista permitida y una
+indicación fija; nunca mensajes crudos, SQL ni credenciales. Mapeo A09/A10:2025.
+Cuatro pruebas de arranque pasan. Una copia temporal que vuelve a descartar el
+error original hace fallar la regresión, sin modificar el árbol del proyecto.
+
+English: HTTP checks confirmed the frontend is available and the backend is not
+listening. This session cannot access Docker or connect to Redis (`EPERM`), so
+backend recovery is not verified. Startup now preserves the original Redis error
+and emits only a known code, stage and fixed hint. Four startup tests pass; an
+isolated mutation reverting error preservation is detected by the regression.

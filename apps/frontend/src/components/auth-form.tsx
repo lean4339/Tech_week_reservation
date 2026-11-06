@@ -29,6 +29,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         body: JSON.stringify({
           email: String(data.get('email')).trim(),
           password: String(data.get('password')),
+          ...(signup
+            ? { businessName: String(data.get('businessName')).trim() }
+            : {}),
         }),
       });
       const body = await response.json();
@@ -59,6 +62,25 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
             : 'Ingresá con tu email y contraseña.'}
         </p>
         <form onSubmit={submit}>
+          {signup && (
+            <>
+              <label htmlFor="businessName">Nombre de la empresa</label>
+              <input
+                id="businessName"
+                name="businessName"
+                type="text"
+                autoComplete="organization"
+                minLength={2}
+                maxLength={120}
+                required
+                disabled={busy}
+                aria-describedby="business-name-help"
+              />
+              <p id="business-name-help" className="muted hint">
+                Entre 2 y 120 caracteres.
+              </p>
+            </>
+          )}
           <label htmlFor="email">Email</label>
           <input
             id="email"

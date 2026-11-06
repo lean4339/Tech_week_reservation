@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyError } from 'fastify';
 import type { AuthConfig } from '../auth/config.js';
 import { PasswordBusyError, InvalidPasswordError } from '../auth/password.js';
+import { InvalidBusinessNameError } from '../auth/business-name.js';
 
 export function registerHttpSecurity(app: FastifyInstance, config: AuthConfig) {
   app.addHook('onSend', async (_request, reply) => {
@@ -16,6 +17,11 @@ export function registerHttpSecurity(app: FastifyInstance, config: AuthConfig) {
       reply.header('Strict-Transport-Security', 'max-age=31536000');
   });
   app.setErrorHandler<FastifyError>((error, request, reply) => {
+    if (error instanceof InvalidBusinessNameError)
+      return reply.code(400).send({
+        message:
+          'Ingresá un nombre de empresa de entre 2 y 120 caracteres, sin caracteres de control.',
+      });
     if (error instanceof InvalidPasswordError)
       return reply.code(400).send({
         message: 'Usá una contraseña poco común de entre 15 y 128 caracteres.',

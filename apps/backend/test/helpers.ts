@@ -25,11 +25,17 @@ export class MemoryUsers implements UserStore {
   async findById(id: string) {
     return this.rows.get(id) ?? null;
   }
-  async create(email: string, hash: string, role: Role) {
+  async create(
+    email: string,
+    hash: string,
+    role: Role,
+    businessName: string | null = null,
+  ) {
     if (await this.findByEmail(email)) return null;
     const user = {
       id: randomUUID(),
       email,
+      business_name: businessName,
       password_hash: hash,
       role,
       active: true,

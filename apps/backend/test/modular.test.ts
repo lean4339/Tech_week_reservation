@@ -6,6 +6,49 @@ import Fastify from 'fastify';
 import { EventEmitter } from 'node:events';
 import type { Redis } from 'ioredis';
 import { connectRedis } from '../dist/db/redis.js';
+import { readAdminPassword } from '../dist/db/admin-password.js';
+
+test('admin password prompt explains rules, retries invalid input and confirmation without exposing secrets', async () => {
+  const accepted = 'Una frase privada para pruebas';
+  const answers = [
+    'short',
+    'passwordpassword',
+    accepted,
+    'Otra confirmación distinta',
+    accepted,
+    accepted,
+  ];
+  const labels: string[] = [];
+  const messages: string[] = [];
+  const result = await readAdminPassword({
+    readHidden: async (label) => {
+      assert(messages[0]?.includes('entre 15 y 128'));
+      labels.push(label);
+      assert(answers.length);
+      return answers.shift()!;
+    },
+    write: (message) => {
+      messages.push(message);
+    },
+  });
+  assert.equal(result, accepted);
+  assert.equal(answers.length, 0);
+  assert.equal(
+    labels.filter((label) => label.startsWith('Confirmá')).length,
+    2,
+  );
+  const output = messages.join('');
+  assert.match(output, /al menos 15/);
+  assert.match(output, /comunes bloqueadas/);
+  assert.match(output, /no coinciden/);
+  for (const secret of [
+    'short',
+    'passwordpassword',
+    accepted,
+    'Otra confirmación distinta',
+  ])
+    assert(!output.includes(secret));
+});
 
 test('Redis startup failure releases the client without issuing QUIT on a disconnected socket', async () => {
   let disconnected = false;
@@ -100,24 +143,44 @@ test('signup persists a normalized user; duplicates do not reveal existence or c
     method: 'POST' as const,
     url: '/auth/signup',
     headers,
-    payload: { email: 'ALICE@example.com', password },
+    payload: {
+      email: 'ALICE@example.com',
+      password,
+      businessName: "  Café O'Connor & Hijos  ",
+    },
   };
   const response = await app.inject(request);
   assert.equal(response.statusCode, 202);
   const user = await users.findByEmail('alice@example.com');
   assert(user);
   assert.equal(user.role, 'user');
+  assert.equal(user.business_name, "Café O'Connor & Hijos");
   assert(await verifyPassword(password, user.password_hash));
   const repeated = await app.inject({
     ...request,
     payload: {
       email: 'alice@example.com',
+      businessName: 'Intento de reemplazo',
       password: 'A different sufficiently long password',
     },
   });
   assert.equal(repeated.statusCode, response.statusCode);
   assert.deepEqual(repeated.json(), response.json());
   assert.equal(await users.count(), 1);
+  assert.equal(user.business_name, "Café O'Connor & Hijos");
+  const login = await app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    headers,
+    payload: { email: user.email, password },
+  });
+  assert.equal(login.statusCode, 200);
+  assert.equal(login.json().user.businessName, user.business_name);
+  const me = await app.inject({
+    url: '/auth/me',
+    headers: { cookie: cookieFrom(login) },
+  });
+  assert.equal(me.json().user.businessName, user.business_name);
   assert(await verifyPassword(password, user.password_hash));
 });
 

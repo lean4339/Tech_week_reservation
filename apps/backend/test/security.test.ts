@@ -11,7 +11,11 @@ test('a small concurrent hashing burst is bounded and capacity recovers afterwar
         method: 'POST',
         url: '/auth/signup',
         headers,
-        payload: { email: `burst-${id}@example.test`, password },
+        payload: {
+          email: `burst-${id}@example.test`,
+          password,
+          businessName: 'Empresa de prueba',
+        },
       }),
     ),
   );
@@ -21,7 +25,11 @@ test('a small concurrent hashing burst is bounded and capacity recovers afterwar
     method: 'POST',
     url: '/auth/signup',
     headers,
-    payload: { email: 'after-burst@example.test', password },
+    payload: {
+      email: 'after-burst@example.test',
+      password,
+      businessName: 'Empresa de prueba',
+    },
   });
   assert.equal(recovered.statusCode, 202);
   assert.equal(await users.count(), 3);
@@ -39,7 +47,7 @@ test('HTML, SQL-like malformed email, CRLF and object injection payloads cannot 
       method: 'POST',
       url: '/auth/signup',
       headers,
-      payload: { email, password },
+      payload: { email, password, businessName: 'Empresa de prueba' },
     });
     assert.equal(response.statusCode, 400);
     assert(!response.body.includes(email));
@@ -57,8 +65,11 @@ test('HTML, SQL-like malformed email, CRLF and object injection payloads cannot 
 test('prototype-pollution fields are rejected and do not alter the process prototype', async (t) => {
   const { app, users } = setup(t);
   const payload =
-    JSON.stringify({ email: 'pollution@example.test', password }).slice(0, -1) +
-    ',"__proto__":{"__auth_polluted__":true}}';
+    JSON.stringify({
+      email: 'pollution@example.test',
+      password,
+      businessName: 'Empresa de prueba',
+    }).slice(0, -1) + ',"__proto__":{"__auth_polluted__":true}}';
   const response = await app.inject({
     method: 'POST',
     url: '/auth/signup',
@@ -202,4 +213,35 @@ test('request log storage failure does not bypass authorization or change a reje
   const response = await app.inject({ url: '/admin/request-events' });
   assert.equal(response.statusCode, 401);
   assert(!response.body.includes('Redis request log failed'));
+});
+
+test('cryptography distinguishes complete multibyte passwords, embedded NUL and Unicode representations', async () => {
+  const password = '🛡'.repeat(127) + 'A';
+  const hash = await hashPassword(password);
+  assert(await verifyPassword(password, hash));
+  assert(!(await verifyPassword('🛡'.repeat(127) + 'B', hash)));
+  assert(!(await verifyPassword(password + '\0', hash)));
+  const composed = 'Frase segura con café y montaña';
+  const encoded = await hashPassword(composed);
+  assert(!(await verifyPassword(composed.normalize('NFD'), encoded)));
+});
+
+test('stored hash manipulation cannot select a weaker or resource-exhausting KDF configuration', async () => {
+  const base = `scrypt$131072$8$1$${'ab'.repeat(16)}$${'cd'.repeat(64)}`;
+  for (const altered of [
+    base.replace('$131072$', '$1073741824$'),
+    base.replace('$8$', '$999999999$'),
+    base.replace('$1$', '$999999999$'),
+    base.replace('scrypt', 'pbkdf2'),
+    base + '\0',
+    base + '$extra',
+    base.slice(0, -1),
+  ])
+    await assert.rejects(
+      verifyPassword(password, altered),
+      /Invalid stored password encoding/,
+    );
+  // Invalid encodings must not occupy the limited hashing slots.
+  const valid = await hashPassword(password);
+  assert(await verifyPassword(password, valid));
 });

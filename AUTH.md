@@ -5,6 +5,13 @@
 El frontend ofrece `/signup`, `/login`, `/dashboard` y `/admin`. El backend
 valida cada permiso; ocultar enlaces en la interfaz no concede ni revoca acceso.
 
+Cada cuenta `user` representa una empresa cliente. `auth.users.business_name`
+guarda su nombre comercial, expuesto como `businessName` en login y `/auth/me`.
+El registro pide un nombre de 2–120 caracteres, recorta espacios externos y rechaza
+caracteres de control. No es único ni determina permisos: la identidad sigue siendo
+el ID de la cuenta. Las cuentas existentes y los administradores creados por CLI
+pueden tener `NULL`; la migración `002_user_business_name.sql` conserva sus datos.
+
 ### Organización y middleware
 
 `apps/backend/src/app.ts` compone los módulos. La configuración HTTP, cabeceras,
@@ -52,14 +59,14 @@ rechaza campos como `role`, `permissions` o `id`. No hay credenciales predetermi
 
 ### Contratos y permisos
 
-| Método y ruta del backend | Acceso         | Resultado                                                               |
-| ------------------------- | -------------- | ----------------------------------------------------------------------- |
-| `POST /auth/signup`       | Público        | Registro con `{email, password}`; 202 genérico, incluso para duplicados |
-| `POST /auth/login`        | Público        | Sesión y perfil; 401 genérico ante credenciales incorrectas             |
-| `GET /auth/me`            | `profile:read` | Perfil de la sesión actual                                              |
-| `POST /auth/logout`       | Cookie actual  | Revoca la sesión y elimina la cookie; cuerpo `{}`                       |
-| `GET /admin/overview`     | `admin:read`   | Cantidad de cuentas                                                     |
-| `GET /admin/auth-events`  | `audit:read`   | Últimos 50 eventos disponibles                                          |
+| Método y ruta del backend | Acceso         | Resultado                                                                             |
+| ------------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| `POST /auth/signup`       | Público        | Registro con `{email, password, businessName}`; 202 genérico, incluso para duplicados |
+| `POST /auth/login`        | Público        | Sesión y perfil; 401 genérico ante credenciales incorrectas                           |
+| `GET /auth/me`            | `profile:read` | Perfil de la sesión actual                                                            |
+| `POST /auth/logout`       | Cookie actual  | Revoca la sesión y elimina la cookie; cuerpo `{}`                                     |
+| `GET /admin/overview`     | `admin:read`   | Cantidad de cuentas                                                                   |
+| `GET /admin/auth-events`  | `audit:read`   | Últimos 50 eventos disponibles                                                        |
 
 `user` tiene `profile:read`; `admin` tiene los tres permisos. Los roles y el estado
 activo se consultan en PostgreSQL en cada petición protegida. El navegador utiliza
@@ -156,14 +163,14 @@ as `role`, `permissions`, or `id`. There are no default administrator credential
 
 ### API and authorization
 
-| Backend method and path  | Required access | Result                                                          |
-| ------------------------ | --------------- | --------------------------------------------------------------- |
-| `POST /auth/signup`      | Public          | `{email, password}`; generic 202 including duplicates           |
-| `POST /auth/login`       | Public          | Session cookie and profile; generic 401 for invalid credentials |
-| `GET /auth/me`           | `profile:read`  | Current session profile                                         |
-| `POST /auth/logout`      | Current cookie  | Revokes session and clears cookie; body `{}`                    |
-| `GET /admin/overview`    | `admin:read`    | Account count                                                   |
-| `GET /admin/auth-events` | `audit:read`    | Latest 50 available events                                      |
+| Backend method and path  | Required access | Result                                                              |
+| ------------------------ | --------------- | ------------------------------------------------------------------- |
+| `POST /auth/signup`      | Public          | `{email, password, businessName}`; generic 202 including duplicates |
+| `POST /auth/login`       | Public          | Session cookie and profile; generic 401 for invalid credentials     |
+| `GET /auth/me`           | `profile:read`  | Current session profile                                             |
+| `POST /auth/logout`      | Current cookie  | Revokes session and clears cookie; body `{}`                        |
+| `GET /admin/overview`    | `admin:read`    | Account count                                                       |
+| `GET /admin/auth-events` | `audit:read`    | Latest 50 available events                                          |
 
 Users have `profile:read`; administrators have all three permissions. PostgreSQL
 is checked for the current role and active status on each protected request.
@@ -219,3 +226,9 @@ Failure to audit login prevents issuance of the session cookie.
 - [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 - [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [OWASP CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
+
+## Nombre de empresa y alta local / Company name and local admin creation
+
+Public signup requires `businessName` (2–120 characters); each user account represents one client company. Migration 002 preserves legacy accounts. The local admin command explains password rules before prompting and retries invalid passwords or mismatched confirmations without exposing secrets.
+
+El registro requiere nombre de empresa. El comando local de admin explica las reglas de contraseña antes de pedirla y permite reintentos sin exponerla.

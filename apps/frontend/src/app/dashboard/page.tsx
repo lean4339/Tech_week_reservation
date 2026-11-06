@@ -16,6 +16,7 @@ export default async function DashboardPage() {
         <p className="eyebrow">MI CUENTA</p>
         <h1>Hola, {user.email}</h1>
         <p>Tu sesión está activa.</p>
+        <p>{user.businessName}</p>
         <p>
           Perfil:{' '}
           <strong>{user.role === 'admin' ? 'Administrador' : 'Usuario'}</strong>

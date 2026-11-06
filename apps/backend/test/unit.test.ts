@@ -4,6 +4,7 @@ import {
   hashPassword,
   verifyPassword,
   validPassword,
+  passwordValidationError,
 } from '../dist/auth/password.js';
 import { authConfig } from '../dist/auth/config.js';
 import { password } from './helpers.ts';
@@ -13,13 +14,34 @@ import { createAuthService } from '../dist/auth/service.js';
 import { InvalidPasswordError } from '../dist/auth/password.js';
 import { MemoryUsers, MemorySecurity } from './helpers.ts';
 
+test('password validation explains the failed rule without changing the policy', () => {
+  assert.match(passwordValidationError('short')!, /al menos 15/);
+  assert.match(passwordValidationError('a'.repeat(129))!, /128/);
+  assert.match(
+    passwordValidationError('PASSWORDPASSWORD')!,
+    /comunes bloqueadas/,
+  );
+  for (const value of [
+    'a'.repeat(15),
+    '😀'.repeat(128),
+    ' palabras con espacios ',
+  ]) {
+    assert.equal(passwordValidationError(value), undefined);
+    assert(validPassword(value));
+  }
+});
+
 test('auth service enforces the password policy even without an HTTP controller', async () => {
   const users = new MemoryUsers();
   const security = new MemorySecurity();
   const service = createAuthService(users, security);
   await assert.rejects(
     service.signup(
-      { email: 'weak@example.test', password: 'short' },
+      {
+        email: 'weak@example.test',
+        password: 'short',
+        businessName: 'Empresa de prueba',
+      },
       {
         requestId: 'service-test',
         ip: '127.0.0.1',
@@ -35,6 +57,7 @@ test('public user projection exposes only the required identity and permissions'
   const result = publicUser({
     id: 'test-id',
     email: 'a@example.test',
+    business_name: 'Empresa de prueba',
     password_hash: 'never-expose-this',
     role: 'user',
     active: true,
@@ -43,6 +66,7 @@ test('public user projection exposes only the required identity and permissions'
     id: 'test-id',
     email: 'a@example.test',
     role: 'user',
+    businessName: 'Empresa de prueba',
     permissions: ['profile:read'],
   });
   assert(!JSON.stringify(result).includes('never-expose-this'));

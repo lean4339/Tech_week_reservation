@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { AuthConfig } from './config.js';
 import type { AuthService } from './service.js';
-import type { Credentials } from './schemas.js';
+import type { Credentials, SignupInput } from './schemas.js';
 import { readToken, setSessionCookie } from './cookies.js';
 
 const auditContext = (request: FastifyRequest) => ({
@@ -12,7 +12,7 @@ const auditContext = (request: FastifyRequest) => ({
 export function authControllers(service: AuthService, config: AuthConfig) {
   return {
     async signup(
-      request: FastifyRequest<{ Body: Credentials }>,
+      request: FastifyRequest<{ Body: SignupInput }>,
       reply: FastifyReply,
     ) {
       await service.signup(request.body, auditContext(request));

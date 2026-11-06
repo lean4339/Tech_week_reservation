@@ -2,7 +2,8 @@ import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
 import pg from 'pg';
 import { migrate } from './migrate.js';
-import { hashPassword, validPassword } from '../auth/password.js';
+import { hashPassword } from '../auth/password.js';
+import { readAdminPassword } from './admin-password.js';
 import { postgresUsers } from '../auth/stores.js';
 import { emailPattern } from '../auth/schemas.js';
 
@@ -33,13 +34,17 @@ try {
   if (email.length > 254 || !new RegExp(emailPattern).test(email))
     throw new Error('Invalid email.');
   hidden = true;
-  process.stdout.write('Password (hidden, 15–128 characters): ');
-  const password = await prompt.question('');
-  process.stdout.write('\nConfirm password (hidden): ');
-  const confirmation = await prompt.question('');
-  process.stdout.write('\n');
-  if (!validPassword(password) || password !== confirmation)
-    throw new Error('Invalid password or confirmation.');
+  const password = await readAdminPassword({
+    readHidden: async (label) => {
+      process.stdout.write(label);
+      const value = await prompt.question('');
+      process.stdout.write('\n');
+      return value;
+    },
+    write: (message) => {
+      process.stdout.write(message);
+    },
+  });
   await migrate(pool);
   const user = await postgresUsers(pool).create(
     email,
@@ -54,7 +59,6 @@ try {
 } catch (error) {
   const allowed = [
     'Invalid email.',
-    'Invalid password or confirmation.',
     'Account already exists; no account was promoted or changed.',
   ];
   console.error(

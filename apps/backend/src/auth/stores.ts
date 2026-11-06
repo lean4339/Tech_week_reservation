@@ -26,7 +26,7 @@ export function postgresUsers(pool: Pool): UserStore {
       return (
         (
           await pool.query<User>(
-            'SELECT id, email, password_hash, role, active FROM auth.users WHERE email = $1',
+            'SELECT id, email, business_name, password_hash, role, active FROM auth.users WHERE email = $1',
             [email],
           )
         ).rows[0] ?? null
@@ -36,20 +36,25 @@ export function postgresUsers(pool: Pool): UserStore {
       return (
         (
           await pool.query<User>(
-            'SELECT id, email, password_hash, role, active FROM auth.users WHERE id = $1',
+            'SELECT id, email, business_name, password_hash, role, active FROM auth.users WHERE id = $1',
             [id],
           )
         ).rows[0] ?? null
       );
     },
-    async create(email: string, hash: string, role: Role) {
+    async create(
+      email: string,
+      hash: string,
+      role: Role,
+      businessName: string | null = null,
+    ) {
       return (
         (
           await pool.query<User>(
-            `INSERT INTO auth.users (id, email, password_hash, role)
-        VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING
-        RETURNING id, email, password_hash, role, active`,
-            [randomUUID(), email, hash, role],
+            `INSERT INTO auth.users (id, email, password_hash, role, business_name)
+        VALUES ($1, $2, $3, $4, $5) ON CONFLICT (email) DO NOTHING
+        RETURNING id, email, business_name, password_hash, role, active`,
+            [randomUUID(), email, hash, role, businessName],
           )
         ).rows[0] ?? null
       );

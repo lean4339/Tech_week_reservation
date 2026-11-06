@@ -6,8 +6,10 @@ import { authControllers } from './controllers.js';
 import { createAuthService } from './service.js';
 import {
   credentialsSchema,
+  signupSchema,
   logoutSchema,
   type Credentials,
+  type SignupInput,
 } from './schemas.js';
 import { rateLimit } from './rate-limit.js';
 
@@ -18,10 +20,10 @@ export function publicAuthRoutes(
   config: AuthConfig,
 ) {
   const handlers = authControllers(createAuthService(users, security), config);
-  app.post<{ Body: Credentials }>(
+  app.post<{ Body: SignupInput }>(
     '/auth/signup',
     {
-      schema: { body: credentialsSchema },
+      schema: { body: signupSchema },
       preHandler: rateLimit(
         security,
         (request) => `signup:${request.ip}`,

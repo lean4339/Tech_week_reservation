@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 export interface CurrentUser {
   id: string;
   email: string;
+  businessName: string | null;
   role: 'admin' | 'user';
   permissions: string[];
 }

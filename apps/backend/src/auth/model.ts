@@ -7,6 +7,7 @@ export const permissions: Record<Role, readonly Permission[]> = {
 export interface User {
   id: string;
   email: string;
+  business_name: string | null;
   password_hash: string;
   role: Role;
   active: boolean;
@@ -44,7 +45,12 @@ export interface RequestRecord {
 export interface UserStore {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
-  create(email: string, hash: string, role: Role): Promise<User | null>;
+  create(
+    email: string,
+    hash: string,
+    role: Role,
+    businessName?: string | null,
+  ): Promise<User | null>;
   count(): Promise<number>;
 }
 export interface SecurityStore {
@@ -67,6 +73,7 @@ export function publicUser(user: User) {
   return {
     id: user.id,
     email: user.email,
+    businessName: user.business_name,
     role: user.role,
     permissions: permissions[user.role] ?? [],
   };

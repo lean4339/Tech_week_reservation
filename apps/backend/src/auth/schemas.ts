@@ -16,6 +16,21 @@ export const credentialsSchema = {
 } as const;
 export type Credentials = { email: string; password: string };
 
+export const signupSchema = {
+  ...credentialsSchema,
+  required: ['email', 'password', 'businessName'],
+  properties: {
+    ...credentialsSchema.properties,
+    businessName: {
+      type: 'string',
+      minLength: 2,
+      maxLength: 120,
+      pattern: '^[^\\u0000-\\u001f\\u007f]*$',
+    },
+  },
+} as const;
+export type SignupInput = Credentials & { businessName: string };
+
 export const logoutSchema = {
   type: 'object',
   additionalProperties: false,

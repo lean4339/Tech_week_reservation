@@ -154,3 +154,5 @@ credentials in artifacts. HTML reports are written to `playwright-report/`.
 
 Once test services are running, `npm run test:all` runs every suite. See
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for observed results and limitations.
+
+La suite incorpora validación del nombre de empresa, persistencia sin inyección SQL, privacidad de credenciales y reintentos del comando de admin. English: tests cover company-name validation/persistence, credential privacy and local administrator password retries.
