@@ -3,6 +3,7 @@ import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 const N = 2 ** 17;
 let running = 0;
 export class PasswordBusyError extends Error {}
+export class InvalidPasswordError extends Error {}
 const common = new Set([
   'passwordpassword',
   'password12345678',

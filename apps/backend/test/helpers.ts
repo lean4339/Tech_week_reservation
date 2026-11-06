@@ -17,7 +17,7 @@ export const headers = {
   'x-requested-with': 'tech-week-web',
 };
 
-class MemoryUsers implements UserStore {
+export class MemoryUsers implements UserStore {
   rows = new Map<string, User>();
   async findByEmail(email: string) {
     return [...this.rows.values()].find((u) => u.email === email) ?? null;
@@ -41,7 +41,7 @@ class MemoryUsers implements UserStore {
     return this.rows.size;
   }
 }
-class MemorySecurity implements SecurityStore {
+export class MemorySecurity implements SecurityStore {
   requestRecords: RequestRecord[] = [];
   sessions = new Map<string, Session>();
   counts = new Map<string, number>();

@@ -142,6 +142,13 @@ in separate terminals. PostgreSQL and Redis must remain running.
   `BACKEND_URL` in `apps/frontend/.env.local` and restart Next.js.
 - **The backend does not start:** Redis must be available at startup.
   Check `docker compose ps` and `npm run db:logs`.
+  The `startup_failed` event includes the stage (`plugins`, `migrations`, or
+  `listen`), a known error code and a fixed hint, without credentials or SQL errors.
+  `ECONNREFUSED` means a refused connection: start services with `npm run db:up`.
+  `28P01` means rejected PostgreSQL credentials; `EADDRINUSE`, an occupied port.
+  `EPERM`/`EACCES` indicate execution-environment restrictions. If `/login` loads
+  but `/api/health` returns 500, first check `http://127.0.0.1:3001/health`:
+  the frontend can be running while the backend is unavailable.
 - **The health endpoint returns 503:** check PostgreSQL, Redis, and the backend
   connection URLs.
 - **PostgreSQL no longer connects after changing its password:** Compose variables

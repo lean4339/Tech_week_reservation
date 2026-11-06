@@ -5,6 +5,31 @@
 El frontend ofrece `/signup`, `/login`, `/dashboard` y `/admin`. El backend
 valida cada permiso; ocultar enlaces en la interfaz no concede ni revoca acceso.
 
+### Organización y middleware
+
+`apps/backend/src/app.ts` compone los módulos. La configuración HTTP, cabeceras,
+errores, auditoría por request y healthcheck están en `http/`; las conexiones y
+su ciclo de vida están en `db/`.
+
+- `auth/middleware.ts`: `authenticate` valida sesión y usuario activo en
+  `onRequest`; `requirePermission` autoriza en `preHandler`. La identidad tipada
+  vive en `request.user`, sin hash de contraseña ni token.
+- `http/routes.ts`: registra las rutas públicas y el grupo privado. Todas las
+  rutas del grupo privado heredan autenticación; el grupo administrativo hereda
+  además `admin:read`. Cada ruta declara el permiso de la operación.
+- `auth/routes.ts` y `admin/routes.ts`: contratos HTTP y controles por ruta.
+- `auth/controllers.ts`: transforma solicitudes y resultados en respuestas HTTP.
+- `auth/service.ts`: registro, política de contraseña, login, rotación, logout
+  y auditoría de autenticación; no depende de Fastify.
+- `auth/stores.ts`: adaptadores PostgreSQL y Redis. `schemas.ts`, `cookies.ts`,
+  `csrf.ts` y `rate-limit.ts` contienen las validaciones y controles reutilizables.
+
+Para agregar una funcionalidad privada, registrá su módulo dentro de
+`protectedRoutes` en `http/routes.ts` y declarale su permiso. No invoques la
+autenticación desde el handler. Login y signup son públicos; logout admite una
+sesión ausente o vencida para que sea idempotente. Todos esos POST mantienen CSRF
+y límites. `/health` es público y no pertenece al grupo de autenticación.
+
 ### Base de datos y administradores
 
 ```bash
@@ -92,6 +117,29 @@ El uso en producción requiere diseñar esos controles y la infraestructura corr
 
 The frontend provides `/signup`, `/login`, `/dashboard`, and `/admin`. The backend
 enforces permissions on every protected request, independently of visible links.
+
+### Organization and middleware
+
+`apps/backend/src/app.ts` composes modules. `http/` owns HTTP configuration,
+security headers, errors, request auditing, route composition and health checks;
+`db/` owns connection setup and lifecycle.
+
+`auth/middleware.ts` provides `authenticate` as an `onRequest` hook and
+`requirePermission` as a `preHandler` hook. A typed, per-request `request.user`
+contains the principal without password hashes or session tokens. `http/routes.ts`
+registers public routes and a protected scope that inherits authentication; the
+admin scope also inherits `admin:read`. Routes declare operation permissions.
+
+`auth/routes.ts` and `admin/routes.ts` declare HTTP contracts. Auth controllers
+translate HTTP requests/responses; `auth/service.ts` owns signup, password policy,
+login, session rotation, logout and authentication auditing without depending on
+Fastify. `auth/stores.ts` implements PostgreSQL/Redis adapters. Schemas, cookies,
+CSRF and rate limiting are separate reusable modules.
+
+Register future private modules inside `protectedRoutes` and declare their
+permissions instead of checking authentication in handlers. Signup and login
+remain public; idempotent logout accepts missing/expired sessions. Their POST
+routes still enforce CSRF and rate limits. `/health` remains public in its own scope.
 
 Start the containers, run migrations, provision an administrator interactively,
 and start both applications using the four commands above. The backend also runs

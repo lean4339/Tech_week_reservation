@@ -17,6 +17,63 @@
 
 ## Incidencias encontradas y corregidas durante la implementación
 
+### Diagnóstico y pruebas de arranque
+
+Se comprobó vía HTTP que `/login` responde 200, el backend en 3001 rechaza la
+conexión y el proxy `/api/health` devuelve 500. Las URLs y puertos locales de
+configuración coinciden. Desde esta sesión, Docker rechaza el acceso a su socket
+y la conexión Redis falla con `EPERM`; esto impide afirmar que el backend se haya
+levantado o identificar la causa de su caída en una terminal externa.
+
+Se corrigió una pérdida de diagnóstico: ioredis emitía el error original y luego
+rechazaba `connect()` con `Connection is closed`. `db/redis.ts` conserva ahora el
+error inicial. `startup.ts` registra etapa, código de una lista permitida y una
+indicación fija; nunca mensajes crudos, SQL ni credenciales. Mapeo A09/A10:2025.
+Cuatro pruebas de arranque pasan. Una copia temporal que vuelve a descartar el
+error original hace fallar la regresión, sin modificar el árbol del proyecto.
+
+English: HTTP checks confirmed the frontend is available and the backend is not
+listening. This session cannot access Docker or connect to Redis (`EPERM`), so
+backend recovery is not verified. Startup now preserves the original Redis error
+and emits only a known code, stage and fixed hint. Four startup tests pass; an
+isolated mutation reverting error preservation is detected by the regression.
+
+### Refactorización posterior: middleware y módulos
+
+Sobre `3af4c374a0e3c1a77dcbb16afed83319be145105` se separaron la composición,
+infraestructura HTTP, middleware de autenticación/permisos, controladores,
+servicio y rutas administrativas. Esta sección corresponde a cambios del árbol
+de trabajo, no a un nuevo commit. Se conservan las condiciones de sesión, CSRF,
+rate limiting, cookies, auditoría y acceso a almacenamiento.
+
+El grupo privado ejecuta `authenticate` en `onRequest`; los permisos se aplican
+en `preHandler`, antes de los handlers. El grupo admin exige además `admin:read`.
+Las pruebas nuevas verifican que un rechazo no ejecute la operación, que los hooks
+se hereden en rutas anidadas, que las identidades concurrentes no se mezclen y que
+un permiso sin autenticación previa rechace el acceso. La política de contraseñas
+ahora se verifica también en el servicio sin pasar por un controlador HTTP.
+El mapeo principal de este cambio es A01/A06/A07/A10:2025. Se consultaron los
+documentos de Hooks y Encapsulation incluidos en el paquete Fastify instalado.
+
+Validación de esta refactorización: `npm run test:precommit` aprobado, incluyendo
+36 pruebas (6 unitarias, 6 modulares, 9 de regresión, 10 de seguridad y 5 de
+middleware), TypeScript de ambas apps, formato, pruebas del hook y diagnóstico
+de timing. Este último registró medianas de 255,78–259,73 ms y cociente 1,0155.
+En una copia temporal se anuló deliberadamente `authenticate`: la nueva prueba
+falló con 400 recibido frente a 401 esperado, demostrando que detecta la omisión
+del control previo a la validación. No se modificó el código original para ese
+experimento. ESLint del backend volvió a fallar por el paquete `globals` ausente.
+Integración y E2E mantienen los bloqueos del entorno registrados abajo.
+
+En inglés: this working-tree refactor adds reusable authentication/permission
+hooks and separates route composition, controllers, services and infrastructure.
+New tests exercise real Fastify hooks, stopping handlers on denial, nested scope
+inheritance, concurrent principal isolation and service-level password policy.
+All 36 local tests, type checks, formatting, hook checks and the timing diagnostic
+passed. A temporary mutation disabling authentication was detected by the new
+test. It is not a new commit review; existing real-service validation limits and
+the missing backend lint dependency still apply.
+
 ### P2 — Cierre de Redis al fallar la conexión
 
 Confianza alta. El intento end-to-end mostró una excepción al ejecutar `QUIT`
@@ -32,7 +89,7 @@ la disponibilidad, sin demostrar un bypass de autenticación.
 Confianza alta. La primera implementación emitía `login_succeeded` antes de guardar
 la sesión. Un fallo de escritura dejaba un evento de éxito engañoso. Ahora se registra
 después de crear la sesión; si falla la auditoría, se revoca la sesión y no se envía
-la cookie. Evidencia: [src/auth/routes.ts](apps/backend/src/auth/routes.ts).
+la cookie. Evidencia: [src/auth/service.ts](apps/backend/src/auth/service.ts).
 Pruebas de regresión y modulares verifican tanto el fallo de sesión como el de auditoría.
 Corresponde a **A09:2025 / A10:2025**. El fallo fue encontrado en código aún no confirmado.
 

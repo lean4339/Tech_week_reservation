@@ -30,6 +30,17 @@ ejecutan Fastify, sus validadores, autenticación, hashing y permisos reales med
 `inject`; reemplazan únicamente los adaptadores de almacenamiento por memoria.
 No demuestran el comportamiento de PostgreSQL o Redis: eso se verifica en integración.
 
+`test/middleware.test.ts` usa Fastify real para verificar herencia de hooks,
+interrupción antes del handler, permisos y roles actuales, aislamiento entre
+solicitudes concurrentes y rechazo cuando falta autenticación. Se incluye en
+`npm test`, `test:modular` y `test:security`, por lo tanto también en pre-commit.
+Las pruebas del servicio verifican la política de contraseña fuera de HTTP.
+
+`test/startup.test.ts` verifica la carga real de plugins y registro de rutas
+reemplazando solo el transporte Redis, conservación del error de conexión original,
+diagnósticos sin secretos y cierre ante fallo sin abrir el puerto. Se incluye en
+las suites local, modular y de seguridad. No demuestra conexión a servicios reales.
+
 | Suite            | Comando                    | Cobertura                                                                                           |
 | ---------------- | -------------------------- | --------------------------------------------------------------------------------------------------- |
 | Unitarias        | `npm run test:unit`        | Hashing, política de contraseñas, proyección pública, claves de sesión y configuración HTTPS        |
@@ -100,6 +111,17 @@ Suites are separated by purpose. Modular and regression tests exercise real Fast
 validation, authentication, hashing, and authorization through HTTP injection, using
 in-memory storage adapters. Real PostgreSQL and Redis behavior belongs to integration
 tests rather than being inferred from those adapters.
+
+`test/middleware.test.ts` exercises real Fastify hook inheritance, rejection
+before handlers, current roles and permissions, concurrent request isolation,
+and denial when authentication is missing. It runs in `npm test`, `test:modular`
+and `test:security`, including pre-commit. Service tests also enforce the password
+policy independently of HTTP.
+
+`test/startup.test.ts` checks actual plugin loading and route registration with
+only the Redis transport replaced, original connection-error preservation,
+redacted diagnostics, and cleanup without listening after a failure. It runs in
+the local, modular and security suites; it does not verify real service connectivity.
 
 | Suite       | Command                    | Coverage                                                                                   |
 | ----------- | -------------------------- | ------------------------------------------------------------------------------------------ |

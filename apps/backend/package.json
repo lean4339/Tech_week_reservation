@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "node --env-file-if-exists=.env --import tsx src/db/run-migrations.ts",
     "admin:create": "node --env-file-if-exists=.env --import tsx src/db/create-admin.ts",
-    "test": "npm run build && node --test --test-isolation=none test/unit.test.ts test/modular.test.ts test/regression.test.ts test/security.test.ts",
+    "test": "npm run build && node --test --test-isolation=none test/unit.test.ts test/modular.test.ts test/regression.test.ts test/security.test.ts test/middleware.test.ts test/startup.test.ts",
     "test:integration": "npm run build && node --env-file-if-exists=.env.test --test --test-isolation=none test/integration.test.ts",
     "test:unit": "npm run build && node --test --test-isolation=none test/unit.test.ts",
-    "test:modular": "npm run build && node --test --test-isolation=none test/modular.test.ts",
+    "test:modular": "npm run build && node --test --test-isolation=none test/modular.test.ts test/middleware.test.ts test/startup.test.ts",
     "test:regression": "npm run build && node --test --test-isolation=none test/regression.test.ts",
-    "test:security": "npm run build && node --test --test-isolation=none test/security.test.ts test/regression.test.ts",
+    "test:security": "npm run build && node --test --test-isolation=none test/security.test.ts test/regression.test.ts test/middleware.test.ts test/startup.test.ts",
     "test:timing": "npm run build && node --test --test-isolation=none test/timing.test.ts"
   },
   "dependencies": {

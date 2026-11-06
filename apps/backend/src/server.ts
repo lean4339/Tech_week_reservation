@@ -1,5 +1,5 @@
 import { buildApp } from './app.js';
-import { migrate } from './db/migrate.js';
+import { startServer } from './startup.js';
 
 const app = buildApp();
 
@@ -12,19 +12,11 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-try {
-  await app.ready();
-  await migrate(app.pg.pool);
-  await app.listen({
+if (
+  !(await startServer(app, {
     host: process.env.HOST ?? '127.0.0.1',
     port: Number(process.env.PORT ?? 3001),
-  });
-} catch {
-  app.log.error(
-    'Startup failed. Check service availability, migrations and configuration.',
-  );
-  await app
-    .close()
-    .catch(() => app.log.error('Could not close application resources.'));
+  }))
+) {
   process.exitCode = 1;
 }

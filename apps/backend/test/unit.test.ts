@@ -9,6 +9,27 @@ import { authConfig } from '../dist/auth/config.js';
 import { password } from './helpers.ts';
 import { publicUser } from '../dist/auth/model.js';
 import { sessionKey } from '../dist/auth/stores.js';
+import { createAuthService } from '../dist/auth/service.js';
+import { InvalidPasswordError } from '../dist/auth/password.js';
+import { MemoryUsers, MemorySecurity } from './helpers.ts';
+
+test('auth service enforces the password policy even without an HTTP controller', async () => {
+  const users = new MemoryUsers();
+  const security = new MemorySecurity();
+  const service = createAuthService(users, security);
+  await assert.rejects(
+    service.signup(
+      { email: 'weak@example.test', password: 'short' },
+      {
+        requestId: 'service-test',
+        ip: '127.0.0.1',
+      },
+    ),
+    InvalidPasswordError,
+  );
+  assert.equal(await users.count(), 0);
+  assert.equal(security.records.length, 0);
+});
 
 test('public user projection exposes only the required identity and permissions', () => {
   const result = publicUser({

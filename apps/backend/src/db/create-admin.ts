@@ -4,7 +4,7 @@ import pg from 'pg';
 import { migrate } from './migrate.js';
 import { hashPassword, validPassword } from '../auth/password.js';
 import { postgresUsers } from '../auth/stores.js';
-import { emailPattern } from '../auth/routes.js';
+import { emailPattern } from '../auth/schemas.js';
 
 if (!process.stdin.isTTY)
   throw new Error(
