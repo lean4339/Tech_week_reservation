@@ -1,3 +1,4 @@
+import type { BusinessStore } from './business/model.js';
 import Fastify from 'fastify';
 import { authConfig } from './auth/config.js';
 import type { SecurityStore, UserStore } from './auth/model.js';
@@ -10,7 +11,11 @@ import { healthRoutes } from './http/health.js';
 
 export function buildApp(
   options: {
-    stores?: { users: UserStore; security: SecurityStore };
+    stores?: {
+      users: UserStore;
+      security: SecurityStore;
+      business?: BusinessStore;
+    };
     logger?: boolean;
   } = {},
 ) {
@@ -25,7 +30,7 @@ export function buildApp(
     const stores = options.stores ?? (await connectStores(scope));
     security = stores.security;
     scope.register(async (api) =>
-      registerApi(api, stores.users, stores.security, config),
+      registerApi(api, stores.users, stores.security, config, stores.business),
     );
     if (!options.stores) healthRoutes(scope);
   });

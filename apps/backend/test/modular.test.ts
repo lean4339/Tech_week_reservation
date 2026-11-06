@@ -206,7 +206,12 @@ test('login sets an HttpOnly session; logout revokes it; logs and responses excl
   const me = await app.inject({ url: '/auth/me', headers: { cookie } });
   assert.equal(me.statusCode, 200);
   assert.equal(me.json().user.id, user.id);
-  assert.deepEqual(me.json().user.permissions, ['profile:read']);
+  assert.deepEqual(me.json().user.permissions, [
+    'profile:read',
+    'rooms:read',
+    'reservations:own',
+    'buildings:read',
+  ]);
   const logout = await app.inject({
     method: 'POST',
     url: '/auth/logout',

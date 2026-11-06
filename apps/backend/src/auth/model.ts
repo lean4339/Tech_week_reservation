@@ -1,8 +1,26 @@
 export type Role = 'admin' | 'user';
-export type Permission = 'profile:read' | 'admin:read' | 'audit:read';
+export type Permission =
+  | 'profile:read'
+  | 'admin:read'
+  | 'audit:read'
+  | 'buildings:read'
+  | 'buildings:write'
+  | 'rooms:read'
+  | 'rooms:write'
+  | 'reservations:own'
+  | 'reservations:manage';
 export const permissions: Record<Role, readonly Permission[]> = {
-  user: ['profile:read'],
-  admin: ['profile:read', 'admin:read', 'audit:read'],
+  user: ['profile:read', 'rooms:read', 'reservations:own', 'buildings:read'],
+  admin: [
+    'profile:read',
+    'admin:read',
+    'audit:read',
+    'rooms:read',
+    'rooms:write',
+    'buildings:read',
+    'buildings:write',
+    'reservations:manage',
+  ],
 };
 export interface User {
   id: string;

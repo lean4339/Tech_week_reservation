@@ -250,3 +250,11 @@ listening. This session cannot access Docker or connect to Redis (`EPERM`), so
 backend recovery is not verified. Startup now preserves the original Redis error
 and emits only a known code, stage and fixed hint. Four startup tests pass; an
 isolated mutation reverting error preservation is detected by the regression.
+
+## API de edificios, salas y reservas / Business API
+
+El middleware compartido autentica todas las rutas de negocio antes de la validación y los handlers. Los permisos por operación separan administración y reservas propias; la identidad del propietario procede de la sesión y se aplica en SQL parametrizado. El directorio de clientes es exclusivo de administradores. Las migraciones 003–005 agregan claves foráneas, índices y exclusión GiST para impedir superposiciones incluso con escrituras concurrentes. Las cancelaciones conservan el historial y liberan el intervalo.
+
+Las 21 pruebas de integración con PostgreSQL y Redis pasaron: migraciones, IDOR sin efectos, elevación de permisos, límites de entrada, filtros opcionales, concurrencia y cancelación. Las pruebas de interfaz de gestión se incorporan en la siguiente etapa.
+
+Shared authentication runs before business validation and handlers. Per-operation permissions and parameterized owner filters prevent clients from acting on another company's bookings. Integration tests verify migrations, authorization, concurrent exclusion, cancellation and optional filters against real PostgreSQL and Redis. Management UI coverage follows in the next commit.

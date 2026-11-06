@@ -95,7 +95,7 @@ accesos ya están implementados. El backend aplica automáticamente la migració
 - [Pruebas unitarias, modulares, de regresión e integrales / Testing](TESTING.md)
 - [Revisión de seguridad / Security review](SECURITY_REVIEW.md)
 
-No hay lógica de reservas ni gestión de empresas. Los límites de la autenticación
+La API incluye gestión de edificios, salas y reservas por empresa. Los límites de la autenticación
 actual están documentados en la guía de autenticación.
 
 ## Referencias
@@ -104,3 +104,22 @@ actual están documentados en la guía de autenticación.
 - [Plugin PostgreSQL de Fastify](https://github.com/fastify/fastify-postgres)
 - [Plugin Redis de Fastify](https://github.com/fastify/fastify-redis)
 - [Imagen oficial de PostgreSQL](https://hub.docker.com/_/postgres)
+
+## Tablas del negocio
+
+La [migración 003](apps/backend/migrations/003_rooms_reservations.sql) crea:
+
+- `public.rooms`: ID, nombre, ubicación, capacidad, estado activo y fecha de creación.
+- `public.reservations`: ID, sala, cuenta cliente, inicio, fin, creación y cancelación.
+
+Cada cuenta `auth.users` representa un cliente y contiene `business_name`;
+no hay tabla de empresas ni de unidades de tiempo. Las reservas usan `timestamptz`
+y un intervalo `[inicio, fin)`: una puede terminar cuando comienza otra.
+Una exclusión GiST impide solapamientos vigentes para la misma sala, incluso entre
+clientes diferentes. Cancelar conserva la reserva y libera el período. Las claves
+foráneas impiden borrar salas o cuentas con historial de reservas.
+
+Los índices por sala/inicio y cliente/inicio permiten consultar ambas agendas;
+la agenda administrativa trae sala y empresa mediante JOIN en una consulta.
+
+API protegida de edificios, salas y reservas disponible. Protected buildings, rooms and reservations API available. See [BUSINESS_API.md](BUSINESS_API.md).

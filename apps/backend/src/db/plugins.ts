@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import postgres from '@fastify/postgres';
 import { Redis } from 'ioredis';
 import { postgresUsers, redisSecurity } from '../auth/stores.js';
+import { postgresBusiness } from '../business/store.js';
 import { connectRedis } from './redis.js';
 
 export function registerPostgres(app: FastifyInstance) {
@@ -25,6 +26,7 @@ export async function connectStores(app: FastifyInstance) {
   await connectRedis(app, client);
   return {
     users: postgresUsers(app.pg.pool),
+    business: postgresBusiness(app.pg.pool),
     security: redisSecurity(app.redis),
   };
 }

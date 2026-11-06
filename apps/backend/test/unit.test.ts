@@ -67,7 +67,12 @@ test('public user projection exposes only the required identity and permissions'
     email: 'a@example.test',
     role: 'user',
     businessName: 'Empresa de prueba',
-    permissions: ['profile:read'],
+    permissions: [
+      'profile:read',
+      'rooms:read',
+      'reservations:own',
+      'buildings:read',
+    ],
   });
   assert(!JSON.stringify(result).includes('never-expose-this'));
 });

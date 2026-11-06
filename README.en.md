@@ -94,12 +94,25 @@ startup. Create administrators with `npm run admin:create`.
 - [Unit, modular, regression, integration, and E2E tests](TESTING.md)
 - [Security review](SECURITY_REVIEW.md)
 
-Reservation logic and company management are not implemented. Current authentication
-limitations are documented in the authentication guide.
-
 ## References
 
 - [ESLint with Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
 - [Fastify PostgreSQL plugin](https://github.com/fastify/fastify-postgres)
 - [Fastify Redis plugin](https://github.com/fastify/fastify-redis)
 - [Official PostgreSQL image](https://hub.docker.com/_/postgres)
+
+## Business tables
+
+[Migration 003](apps/backend/migrations/003_rooms_reservations.sql) creates
+`public.rooms` (name, location, capacity, active flag) and `public.reservations`
+(room, client account, start/end, creation/cancellation timestamps).
+
+Each `auth.users` account represents a client and carries `business_name`; no
+separate company or time-unit table is needed. Reservations use finite
+`timestamptz` intervals with exclusive end boundaries, allowing adjacent bookings.
+A GiST exclusion prevents active overlaps for the same room across clients.
+Cancellation preserves history and releases the interval; foreign keys restrict
+deleting referenced rooms and accounts. Room/start and client/start indexes
+support agendas; JOINs return room and business details in one query.
+
+API protegida de edificios, salas y reservas disponible. Protected buildings, rooms and reservations API available. See [BUSINESS_API.md](BUSINESS_API.md).

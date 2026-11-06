@@ -232,3 +232,5 @@ Failure to audit login prevents issuance of the session cookie.
 Public signup requires `businessName` (2–120 characters); each user account represents one client company. Migration 002 preserves legacy accounts. The local admin command explains password rules before prompting and retries invalid passwords or mismatched confirmations without exposing secrets.
 
 El registro requiere nombre de empresa. El comando local de admin explica las reglas de contraseña antes de pedirla y permite reintentos sin exponerla.
+
+Los permisos de negocio separan escritura administrativa y reservas propias; ver [BUSINESS_API.md](BUSINESS_API.md). Business permissions separate administrator writes from client-owned bookings.

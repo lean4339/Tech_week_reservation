@@ -1,3 +1,4 @@
+import { BusinessError } from '../business/model.js';
 import type { FastifyInstance, FastifyError } from 'fastify';
 import type { AuthConfig } from '../auth/config.js';
 import { PasswordBusyError, InvalidPasswordError } from '../auth/password.js';
@@ -17,6 +18,8 @@ export function registerHttpSecurity(app: FastifyInstance, config: AuthConfig) {
       reply.header('Strict-Transport-Security', 'max-age=31536000');
   });
   app.setErrorHandler<FastifyError>((error, request, reply) => {
+    if (error instanceof BusinessError)
+      return reply.code(error.statusCode).send({ message: error.message });
     if (error instanceof InvalidBusinessNameError)
       return reply.code(400).send({
         message:
