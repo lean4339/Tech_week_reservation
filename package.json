@@ -13,7 +13,7 @@
     "prepare": "sh scripts/install-hooks.sh",
     "hooks:install": "sh scripts/install-hooks.sh",
     "test:hooks": "sh scripts/test-hooks.sh",
-    "test:precommit": "npm run test:hooks && npm run typecheck && npm run format:check && npm test && npm run test:timing",
+    "test:precommit": "npm run test:dependencies && npm run test:hooks && npm run typecheck && npm run format:check && npm test && npm run test:timing",
     "dev": "concurrently --kill-others --names frontend,backend \"npm run dev -w @tech-week/frontend\" \"npm run dev -w @tech-week/backend\"",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
@@ -34,10 +34,12 @@
     "test:modular": "npm run test:modular -w @tech-week/backend",
     "test:regression": "npm run test:regression -w @tech-week/backend",
     "test:e2e": "playwright test",
-    "test:all": "npm test && npm run test:timing && npm run test:integration && npm run test:e2e",
-    "test:security": "npm run test:security -w @tech-week/backend",
+    "test:all": "npm run test:dependencies && npm test && npm run test:timing && npm run test:integration && npm run test:e2e",
+    "test:security": "npm run test:dependencies && npm run test:security -w @tech-week/backend",
     "test:timing": "npm run test:timing -w @tech-week/backend",
-    "test:frontend": "node --test tests/frontend-business.test.ts"
+    "test:frontend": "node --test tests/frontend-business.test.ts",
+    "test:dependencies": "npm audit --include=dev --include=optional --include=peer --audit-level=low",
+    "test:dependencies:prod": "npm audit --omit=dev --audit-level=low"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
@@ -50,5 +52,10 @@
     "prettier": "3.9.10",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.46.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    }
   }
 }

@@ -9,13 +9,14 @@ ejecutá `npm run hooks:install` una vez. Configura `core.hooksPath=.githooks` s
 para este repositorio y conserva los hooks en Git. Si hay hooks propios activos,
 la instalación se detiene para evitar reemplazarlos silenciosamente.
 
-Cada `git commit` ejecuta `npm run test:precommit`: prueba del hook, TypeScript
+Cada `git commit` ejecuta `npm run test:precommit`: auditoría de dependencias npm (incluye desarrollo), prueba del hook, TypeScript
 de ambas apps, formato, suites unitarias/modulares/regresión/seguridad y diagnóstico
 de timing. Cualquier error cancela el commit. Revisá y agregá todos los cambios
 al índice antes de commitear: el hook rechaza archivos modificados sin agregar
 y archivos nuevos no ignorados, para probar el mismo contenido que se confirma.
 
-No requiere Docker. ESLint y las pruebas de integración/E2E no forman parte de
+No requiere Docker. La auditoría requiere acceso al registro npm y un fallo de red
+también cancela la validación; no se omite silenciosamente. ESLint y las pruebas de integración/E2E no forman parte de
 este hook; ejecutá `npm run check` y `npm run test:all` con las dependencias y los
 servicios disponibles para la validación completa. Los hooks son un control local,
 no una política impuesta por el servidor remoto.
@@ -100,13 +101,14 @@ run `npm run hooks:install` once. It sets `core.hooksPath=.githooks` for this
 repository only; the hooks are tracked in Git. Installation stops if custom hooks
 are already active, rather than silently replacing them.
 
-Each `git commit` runs `npm run test:precommit`: hook checks, both applications'
+Each `git commit` runs `npm run test:precommit`: npm dependency audit (including development), hook checks, both applications'
 TypeScript checks, formatting, unit/modular/regression/security tests, and the
 timing diagnostic. Any failure aborts the commit. Review and stage all changes
 first: unstaged modifications and non-ignored untracked files are rejected so
 tests exercise the content being committed.
 
-Docker is not required. ESLint and integration/E2E tests are outside this hook;
+Docker is not required. Auditing requires npm registry access; network errors also
+fail validation and are not silently skipped. ESLint and integration/E2E tests are outside this hook;
 run `npm run check` and `npm run test:all` with dependencies and test services
 available for full validation. Local hooks are not a remote enforcement policy.
 
@@ -299,3 +301,25 @@ cache concurrency/recovery, namespace and period isolation, real role/account/se
 revocation, multibyte/KDF tampering, stored XSS and browser permission changes.
 Two isolated mutation experiments confirmed that the tests detect disabled-account
 access and removal of Redis namespace separation. Application code was unchanged.
+
+## Auditoría de dependencias / Dependency auditing
+
+`npm run test:dependencies` audita el árbol npm completo, incluyendo desarrollo,
+opcionales y peers. Falla ante vulnerabilidades de nivel low o superior o ante un
+error de auditoría. `npm run test:dependencies:prod` permite consultar el alcance
+de ejecución por separado. `test:security`, `test:all` y `test:precommit` ejecutan
+la auditoría completa primero. No usar `npm audit fix --force` sin revisar los
+cambios: puede proponer downgrades incompatibles en otros paquetes.
+
+Controles adicionales ejecutables:
+
+```bash
+npm audit signatures
+npm sbom --package-lock-only --sbom-format=cyclonedx > sbom.cdx.json
+```
+
+English: full dependency auditing includes development, optional and peer packages,
+fails on low-or-higher advisories and registry errors, and runs before security,
+full-suite and pre-commit checks. Production-only auditing is available separately.
+Signature verification and lockfile-based CycloneDX generation are shown above.
+See [dependency audit and remediation](DEPENDENCY_AUDIT.md).

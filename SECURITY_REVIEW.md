@@ -1,5 +1,23 @@
 # Revisión de seguridad / Security review
 
+## Auditoría de dependencias — estado actualizado 2026-11-06
+
+La revisión anterior de A03 estaba incompleta. Se ejecutó la auditoría npm completa:
+8 entradas moderadas derivadas de un aviso de minimatch 10.2.6; corregido con
+11.0.1 mediante override específico y lockfile actualizado. Auditorías completa y
+de ejecución ahora sin hallazgos; firmas, atestaciones e instalación limpia verificadas.
+La auditoría queda incorporada en `test:security`, `test:all` y `test:precommit`.
+
+**Pendiente explícito:** ESLint 9 fuera de soporte, con plugins Next que todavía
+no declaran compatibilidad con ESLint 10. No se oculta por el resultado de npm audit.
+El alcance no incluye un escaneo de imágenes Docker ni del sistema operativo.
+[Hallazgos, evidencia, fuentes y límites](DEPENDENCY_AUDIT.md).
+
+English: A03 was previously incomplete. The minimatch advisory is fixed; full and
+production npm audits, registry signatures and clean installation were verified.
+An ESLint 9 end-of-life compatibility issue remains explicitly open. Details and
+scope limits are recorded in DEPENDENCY_AUDIT.md.
+
 ## Alcance y metodología
 
 - Proyecto: `Tech_week_reservation`.

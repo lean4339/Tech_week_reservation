@@ -154,3 +154,5 @@ o empresa sin completar fechas, o usar solo desde/hasta. Se mantienen paginació
 y permisos; “Quitar filtros” vuelve a la vista sin fechas.
 
 [Métricas y caché Redis: fórmulas, límites y funcionamiento](METRICS.md).
+
+[Auditoría de dependencias / Dependency audit](DEPENDENCY_AUDIT.md).

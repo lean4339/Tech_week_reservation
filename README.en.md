@@ -149,3 +149,5 @@ bounds; room/company/building filters work without them. Pagination and ownershi
 checks remain enforced.
 
 [Metrics and Redis caching: formulas, limits and behavior](METRICS.md).
+
+[Auditoría de dependencias / Dependency audit](DEPENDENCY_AUDIT.md).
