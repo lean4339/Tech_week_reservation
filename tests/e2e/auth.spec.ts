@@ -14,6 +14,8 @@ const pool = new pg.Pool({
   connectionTimeoutMillis: 2000,
 });
 const emails: string[] = [];
+const roomIds: string[] = [];
+const buildingIds: string[] = [];
 let adminEmail: string;
 
 test.beforeAll(async () => {
@@ -27,6 +29,17 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => {
   try {
+    await pool.query(
+      'DELETE FROM public.reservations WHERE room_id = ANY($1::uuid[])',
+      [roomIds],
+    );
+    await pool.query('DELETE FROM public.rooms WHERE id = ANY($1::uuid[])', [
+      roomIds,
+    ]);
+    await pool.query(
+      'DELETE FROM public.buildings WHERE id = ANY($1::uuid[])',
+      [buildingIds],
+    );
     await pool.query('DELETE FROM auth.users WHERE email = ANY($1::text[])', [
       emails,
     ]);
@@ -80,7 +93,7 @@ test('user signs up, logs in, cannot access admin, logs out and cannot replay th
   await expect(page.locator('main')).toContainText(businessName);
   await expect(page.locator('img[src="x"]')).toHaveCount(0);
   await expect(
-    page.getByRole('heading', { name: `Hola, ${email}`, exact: true }),
+    page.getByRole('heading', { name: 'Salas y disponibilidad', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('link', { name: /Abrir administración/ }),
@@ -123,9 +136,9 @@ test('admin can log in and read real Redis authentication events', async ({
   await page
     .getByRole('button', { name: 'Iniciar sesión', exact: true })
     .click();
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await page.getByRole('link', { name: /Abrir administración/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole('link', { name: 'Actividad', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/activity$/);
   await expect(
     page.getByRole('heading', { name: 'Acceso y actividad' }),
   ).toBeVisible();
@@ -185,4 +198,124 @@ test('login displays a generic credentials error without creating a session', as
       c.name.includes('tech_week_session'),
     ),
   ).toHaveLength(0);
+});
+
+test('room and reservation CRUD enforces roles through the Next proxy and real backend', async ({
+  request,
+  playwright,
+  baseURL,
+}) => {
+  const alice = await playwright.request.newContext({
+    baseURL,
+    extraHTTPHeaders: headers,
+  });
+  const bob = await playwright.request.newContext({
+    baseURL,
+    extraHTTPHeaders: headers,
+  });
+  try {
+    expect(
+      (
+        await request.post('/api/auth/login', {
+          headers,
+          data: { email: adminEmail, password },
+        })
+      ).status(),
+    ).toBe(200);
+    for (const client of [alice, bob]) {
+      const email = `booking-${randomUUID()}@example.test`;
+      emails.push(email);
+      expect(
+        (
+          await client.post('/api/auth/signup', {
+            data: { email, password, businessName: 'Cliente E2E' },
+          })
+        ).status(),
+      ).toBe(202);
+      expect(
+        (
+          await client.post('/api/auth/login', { data: { email, password } })
+        ).status(),
+      ).toBe(200);
+    }
+    const createdBuilding = await request.post('/api/buildings', {
+      headers,
+      data: { name: 'Edificio E2E', address: 'Calle 123' },
+    });
+    expect(createdBuilding.status()).toBe(201);
+    const buildingId = (await createdBuilding.json()).building.id;
+    buildingIds.push(buildingId);
+    const createdRoom = await request.post('/api/rooms', {
+      headers,
+      data: { name: 'Sala E2E', capacity: 10, buildingId },
+    });
+    expect(createdRoom.status()).toBe(201);
+    const roomId = (await createdRoom.json()).room.id;
+    roomIds.push(roomId);
+    expect(
+      (
+        await alice.post('/api/rooms', {
+          data: { name: 'Intento rechazado', capacity: 8 },
+        })
+      ).status(),
+    ).toBe(403);
+    expect((await alice.get(`/api/rooms/${roomId}`)).status()).toBe(200);
+    const period = {
+      startsAt: '2035-04-10T10:00:00Z',
+      endsAt: '2035-04-10T11:00:00Z',
+    };
+    const reserved = await alice.post('/api/reservations', {
+      data: { roomId, ...period },
+    });
+    expect(reserved.status()).toBe(201);
+    const id = (await reserved.json()).reservation.id;
+    expect((await bob.get(`/api/reservations/${id}`)).status()).toBe(404);
+    expect(
+      (await bob.delete(`/api/reservations/${id}`, { data: {} })).status(),
+    ).toBe(404);
+    expect(
+      (
+        await bob.post('/api/reservations', { data: { roomId, ...period } })
+      ).status(),
+    ).toBe(409);
+    const availability = await bob.get(
+      `/api/rooms/${roomId}/availability?from=${period.startsAt}&to=${period.endsAt}`,
+    );
+    expect(await availability.json()).toEqual({ available: false });
+    const moved = {
+      startsAt: '2035-04-10T12:00:00Z',
+      endsAt: '2035-04-10T13:00:00Z',
+    };
+    expect(
+      (await alice.patch(`/api/reservations/${id}`, { data: moved })).status(),
+    ).toBe(200);
+    const query = `from=2035-04-10T00:00:00Z&to=2035-04-11T00:00:00Z&roomId=${roomId}`;
+    expect((await bob.get(`/api/admin/reservations?${query}`)).status()).toBe(
+      403,
+    );
+    const agenda = await request.get(`/api/admin/reservations?${query}`);
+    expect(agenda.status()).toBe(200);
+    expect((await agenda.json()).reservations).toHaveLength(1);
+    expect(
+      (await alice.delete(`/api/reservations/${id}`, { data: {} })).status(),
+    ).toBe(200);
+    expect(
+      (
+        await bob.post('/api/reservations', { data: { roomId, ...moved } })
+      ).status(),
+    ).toBe(201);
+    expect(
+      (
+        await request.delete(`/api/rooms/${roomId}`, { headers, data: {} })
+      ).status(),
+    ).toBe(200);
+    expect(
+      (
+        await alice.post('/api/reservations', { data: { roomId, ...period } })
+      ).status(),
+    ).toBe(409);
+  } finally {
+    await alice.dispose();
+    await bob.dispose();
+  }
 });

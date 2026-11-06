@@ -94,13 +94,6 @@ startup. Create administrators with `npm run admin:create`.
 - [Unit, modular, regression, integration, and E2E tests](TESTING.md)
 - [Security review](SECURITY_REVIEW.md)
 
-## References
-
-- [ESLint with Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
-- [Fastify PostgreSQL plugin](https://github.com/fastify/fastify-postgres)
-- [Fastify Redis plugin](https://github.com/fastify/fastify-redis)
-- [Official PostgreSQL image](https://hub.docker.com/_/postgres)
-
 ## Business tables
 
 [Migration 003](apps/backend/migrations/003_rooms_reservations.sql) creates
@@ -115,4 +108,41 @@ Cancellation preserves history and releases the interval; foreign keys restrict
 deleting referenced rooms and accounts. Room/start and client/start indexes
 support agendas; JOINs return room and business details in one query.
 
-API protegida de edificios, salas y reservas disponible. Protected buildings, rooms and reservations API available. See [BUSINESS_API.md](BUSINESS_API.md).
+The [rooms and reservations API](BUSINESS_API.md) provides CRUD with role permissions,
+account ownership and concurrency controls. The frontend includes:
+
+- `/admin`: administrator agenda, room/date/company filters, booking for clients,
+  rescheduling and cancellation.
+- `/admin/buildings`: create, edit, deactivate and reactivate buildings.
+- `/admin/rooms`: manage rooms and assign them to buildings.
+- `/admin/activity`: authentication and HTTP request logs.
+- `/dashboard`: client room catalogue, period availability and booking.
+- `/reservations`: personal bookings, filters, rescheduling and cancelled history.
+
+Admins land on the agenda; clients land on the catalogue. Create a building and
+then assign rooms to it as an admin; client accounts sign up at `/signup`. Forms use the device time zone and send
+UTC timestamps. Booking/cancellation confirmations and server errors are displayed,
+including conflicts caused by a booking made after the availability check.
+Recurring bookings and opening hours are not implemented yet.
+Current authentication limitations are documented in [AUTH.md](AUTH.md).
+
+Lists load immediately with advanced filters collapsed. Status changes apply
+directly. To book, select a room, enter its time period and confirm; checking
+availability beforehand is optional. Create, edit and cancel actions open dialogs
+with inline errors and Escape dismissal.
+
+## References
+
+- [ESLint with Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
+- [Fastify PostgreSQL plugin](https://github.com/fastify/fastify-postgres)
+- [Fastify Redis plugin](https://github.com/fastify/fastify-redis)
+- [Official PostgreSQL image](https://hub.docker.com/_/postgres)
+
+Migration `004_buildings.sql` preserves legacy rooms and bookings. Assign each legacy
+room to a building in `/admin/rooms` before accepting new reservations; the migration
+does not invent buildings or addresses. Building deactivation blocks new bookings
+without deleting history. See [building contracts](BUSINESS_API.md).
+
+Reservation agendas open without date filters. Dates are optional, independent
+bounds; room/company/building filters work without them. Pagination and ownership
+checks remain enforced.

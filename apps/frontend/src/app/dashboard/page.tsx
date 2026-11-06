@@ -1,32 +1,14 @@
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { LogoutButton } from '@/components/logout-button';
+import { WorkspaceShell } from '@/components/workspace-shell';
+import { RoomExplorer } from '@/components/business/room-explorer';
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const user = await requireUser('rooms:read');
+  if (user.permissions.includes('reservations:manage')) redirect('/admin');
   return (
-    <main className="workspace">
-      <header>
-        <Link href="/dashboard" className="brand">
-          Tech Week Reservation
-        </Link>
-        <LogoutButton />
-      </header>
-      <section className="card">
-        <p className="eyebrow">MI CUENTA</p>
-        <h1>Hola, {user.email}</h1>
-        <p>Tu sesión está activa.</p>
-        <p>{user.businessName}</p>
-        <p>
-          Perfil:{' '}
-          <strong>{user.role === 'admin' ? 'Administrador' : 'Usuario'}</strong>
-        </p>
-        {user.permissions.includes('admin:read') && (
-          <Link className="action-link" href="/admin">
-            Abrir administración →
-          </Link>
-        )}
-      </section>
-    </main>
+    <WorkspaceShell user={user} title="Salas y disponibilidad" section="rooms">
+      <RoomExplorer />
+    </WorkspaceShell>
   );
 }

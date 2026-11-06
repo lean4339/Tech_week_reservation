@@ -95,16 +95,6 @@ accesos ya están implementados. El backend aplica automáticamente la migració
 - [Pruebas unitarias, modulares, de regresión e integrales / Testing](TESTING.md)
 - [Revisión de seguridad / Security review](SECURITY_REVIEW.md)
 
-La API incluye gestión de edificios, salas y reservas por empresa. Los límites de la autenticación
-actual están documentados en la guía de autenticación.
-
-## Referencias
-
-- [ESLint con Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
-- [Plugin PostgreSQL de Fastify](https://github.com/fastify/fastify-postgres)
-- [Plugin Redis de Fastify](https://github.com/fastify/fastify-redis)
-- [Imagen oficial de PostgreSQL](https://hub.docker.com/_/postgres)
-
 ## Tablas del negocio
 
 La [migración 003](apps/backend/migrations/003_rooms_reservations.sql) crea:
@@ -121,5 +111,43 @@ foráneas impiden borrar salas o cuentas con historial de reservas.
 
 Los índices por sala/inicio y cliente/inicio permiten consultar ambas agendas;
 la agenda administrativa trae sala y empresa mediante JOIN en una consulta.
+La [API de salas y reservas](BUSINESS_API.md) implementa CRUD con permisos por rol,
+propiedad por cuenta y control de concurrencia. El frontend permite gestionar estas
+operaciones desde las siguientes pantallas:
 
-API protegida de edificios, salas y reservas disponible. Protected buildings, rooms and reservations API available. See [BUSINESS_API.md](BUSINESS_API.md).
+- `/admin`: agenda administrativa, filtros por sala/fechas/empresa, creación para
+  clientes, reprogramación y cancelación.
+- `/admin/buildings`: crear, editar, desactivar y reactivar edificios.
+- `/admin/rooms`: gestionar salas y asignarlas a edificios.
+- `/admin/activity`: eventos de autenticación y requests.
+- `/dashboard`: catálogo y disponibilidad por período para clientes, con reserva.
+- `/reservations`: reservas propias, filtros, reprogramación e historial de canceladas.
+
+Al iniciar sesión, un admin entra a la agenda y un cliente al catálogo. Primero creá
+un edificio y después asignale salas con el admin; las cuentas cliente se registran en `/signup`. Las fechas se
+ingresan y muestran en la zona horaria del dispositivo y se envían como UTC.
+Los formularios confirman reservas y cancelaciones y muestran errores del servidor,
+incluido un conflicto si otra persona reservó después de consultar disponibilidad.
+No hay recurrencias ni horarios de apertura. Ver también [AUTH.md](AUTH.md).
+
+Las listas se muestran al entrar, con los filtros avanzados plegados. El estado
+se cambia directamente, sin aplicar un formulario. Para reservar, elegí una sala
+del catálogo, completá el horario y confirmá; consultar disponibilidad antes es
+opcional. La creación, edición y cancelación se abren en diálogos que muestran
+los errores en el mismo lugar y permiten cerrar con Escape.
+
+## Referencias
+
+- [ESLint con Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
+- [Plugin PostgreSQL de Fastify](https://github.com/fastify/fastify-postgres)
+- [Plugin Redis de Fastify](https://github.com/fastify/fastify-redis)
+- [Imagen oficial de PostgreSQL](https://hub.docker.com/_/postgres)
+
+La migración `004_buildings.sql` conserva salas y reservas existentes. Asigná cada
+sala heredada a un edificio desde `/admin/rooms` para aceptar nuevas reservas; la
+migración no inventa edificios ni direcciones. Desactivar un edificio impide nuevas
+reservas sin borrar historial. Ver [contratos de edificios](BUSINESS_API.md).
+
+Las agendas muestran reservas sin exigir fechas. Podés filtrar por edificio, sala
+o empresa sin completar fechas, o usar solo desde/hasta. Se mantienen paginación
+y permisos; “Quitar filtros” vuelve a la vista sin fechas.
