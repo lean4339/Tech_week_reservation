@@ -1,0 +1,98 @@
+# Tech Week Reservation
+
+Setup inicial con Next.js (App Router) y Fastify, ambos con TypeScript estricto.
+ESLint y Prettier configurados para ambos proyectos. PostgreSQL y Redis se ejecutan
+en Docker; frontend y backend se ejecutan localmente con npm workspaces.
+
+Guía paso a paso: [cómo levantar y detener el proyecto](LEVANTAR.md).
+
+## Requisitos
+
+- Node.js 24 y npm 11 o superior (`nvm use` si utilizás nvm).
+- Docker con Docker Compose y acceso al servicio de Docker.
+- Puertos libres: 3000 (frontend), 3001 (backend), 5432 (PostgreSQL) y 6379 (Redis).
+
+## Ejecutar localmente
+
+Desde la raíz del repositorio:
+
+```bash
+npm ci
+cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
+cp apps/frontend/.env.example apps/frontend/.env.local
+npm run db:up
+npm run dev
+```
+
+Las copias de los archivos de entorno se hacen una sola vez. Los valores de ejemplo
+sirven para desarrollo local y coinciden con Docker Compose.
+
+- Frontend: <http://127.0.0.1:3000>.
+- Backend: <http://127.0.0.1:3001/health>.
+- Proxy del frontend hacia el backend: <http://127.0.0.1:3000/api/health>.
+
+`GET /health` verifica las conexiones a PostgreSQL y Redis: devuelve 200 con
+`{"status":"ok"}` si ambas responden, o 503 si falla alguna durante la ejecución.
+Redis debe estar disponible para iniciar el backend.
+
+Detener `npm run dev` con Ctrl+C. Detener los contenedores con `npm run db:down`;
+los datos se conservan en volúmenes Docker. `npm run db:logs` muestra los logs de
+los contenedores.
+
+## Estructura
+
+```text
+apps/
+  frontend/   Next.js + React + TypeScript
+  backend/    Fastify + TypeScript + conexiones PostgreSQL/Redis
+compose.yaml  PostgreSQL 18 y Redis 8 con volúmenes y healthchecks
+```
+
+## Comandos
+
+```bash
+npm run check          # ESLint, TypeScript y verificación de formato
+npm run format         # Aplicar Prettier
+npm run build          # Compilar ambos proyectos
+npm run dev -w @tech-week/frontend
+npm run dev -w @tech-week/backend
+```
+
+Después del build, se pueden ejecutar las versiones compiladas en dos terminales:
+
+```bash
+npm run start -w @tech-week/backend
+npm run start -w @tech-week/frontend
+```
+
+Los contenedores también deben estar iniciados en este modo.
+
+## Configuración
+
+- `.env`: configuración de PostgreSQL y puertos publicados por Docker Compose.
+- `apps/backend/.env`: `HOST`, `PORT`, `LOG_LEVEL`, `DATABASE_URL` y `REDIS_URL`.
+- `apps/frontend/.env.local`: `BACKEND_URL`, utilizado por el proxy de Next.js.
+
+Si cambiás credenciales o puertos en Compose, actualizá las URLs del backend.
+Si cambiás el puerto del backend, actualizá `BACKEND_URL` y reiniciá Next.js.
+Las credenciales de PostgreSQL se aplican al inicializar un volumen nuevo;
+cambiar `.env` no modifica las credenciales de una base existente.
+
+## Alcance de este setup
+
+Incluye una página inicial mínima, conexiones a PostgreSQL y Redis, un endpoint
+de diagnóstico y logs JSON del backend mediante el logger integrado de Fastify.
+Redis queda disponible para incorporar autenticación y almacenamiento de logs
+en la siguiente etapa; todavía no guarda sesiones ni logs de la aplicación.
+
+No hay lógica de reservas, modelos de negocio, tablas, autenticación, pruebas
+de negocio ni configuración de despliegue. Las pruebas de comportamientos críticos
+se incorporarán cuando se implementen esas funcionalidades.
+
+## Referencias
+
+- [ESLint con Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
+- [Plugin PostgreSQL de Fastify](https://github.com/fastify/fastify-postgres)
+- [Plugin Redis de Fastify](https://github.com/fastify/fastify-redis)
+- [Imagen oficial de PostgreSQL](https://hub.docker.com/_/postgres)
