@@ -1,0 +1,24 @@
+name: tech-week-reservation-tests
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: tech_week
+      POSTGRES_PASSWORD: tech_week_test
+      POSTGRES_DB: tech_week_test
+    ports: ['127.0.0.1:55432:5432']
+    tmpfs: ['/var/lib/postgresql']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tech_week -d tech_week_test']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+  redis:
+    image: redis:8-alpine
+    ports: ['127.0.0.1:56379:6379']
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 15

@@ -1,0 +1,160 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #142b42;
+  background: #f1f5f8;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+a {
+  color: #15645c;
+  text-underline-offset: 3px;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+.action-link {
+  background: #12645c;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 13px 20px;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 3px solid #207eab;
+  outline-offset: 3px;
+}
+.auth-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.card {
+  background: white;
+  border: 1px solid #dce5ec;
+  padding: clamp(24px, 5vw, 44px);
+  border-radius: 18px;
+  box-shadow: 0 14px 45px #17324c08;
+}
+.auth-shell .card {
+  width: 100%;
+  max-width: 480px;
+}
+h1 {
+  font-size: clamp(1.65rem, 4vw, 2.2rem);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 1.25rem;
+  margin-top: 32px;
+}
+.eyebrow {
+  color: #15645c;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+}
+.muted {
+  color: #536779;
+  line-height: 1.6;
+}
+form {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+label {
+  margin-top: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input {
+  min-width: 0;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #a9bac8;
+  border-radius: 7px;
+  background: #fff;
+  color: #142b42;
+}
+form button {
+  margin-top: 14px;
+}
+.hint {
+  font-size: 0.85rem;
+  margin: 0;
+}
+.error {
+  color: #9c2525;
+  background: #fff0ee;
+  padding: 12px;
+  border-radius: 7px;
+}
+.success {
+  color: #16564c;
+  background: #eaf9f2;
+  padding: 12px;
+  border-radius: 7px;
+}
+.footer-link {
+  font-size: 0.9rem;
+  margin-top: 25px;
+}
+.workspace {
+  max-width: 1080px;
+  margin: auto;
+  padding: 28px 20px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+}
+.secondary {
+  background: white;
+  color: #142b42;
+  border: 1px solid #a9bac8;
+}
+.action-link {
+  display: inline-block;
+  margin-top: 12px;
+  text-decoration: none;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+th,
+td {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid #e3ebf1;
+}

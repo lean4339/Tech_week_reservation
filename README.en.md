@@ -31,6 +31,9 @@ npm run dev
 Copy the environment files only once. The example values are for local development
 and match the Docker Compose configuration.
 
+`npm ci` enables [automatic tests before each commit](TESTING.md).
+For existing installations, run `npm run hooks:install`.
+
 - Frontend: <http://127.0.0.1:3000>.
 - Backend: <http://127.0.0.1:3001/health>.
 - Frontend proxy to the backend: <http://127.0.0.1:3000/api/health>.
@@ -81,16 +84,18 @@ If you change the backend port, update `BACKEND_URL` and restart Next.js.
 PostgreSQL credentials are applied when a new volume is initialized;
 changing `.env` does not update credentials in an existing database.
 
-## Setup scope
+## Authentication and testing
 
-Includes a minimal home page, PostgreSQL and Redis connections, a health endpoint,
-and backend JSON logs through Fastify's built-in logger. Redis is available for
-authentication and log storage in the next stage; it does not store application
-sessions or logs yet.
+Login, user signup, Redis sessions, `admin`/`user` roles, and access auditing are
+implemented. The backend automatically applies the `auth.users` migration at
+startup. Create administrators with `npm run admin:create`.
 
-Reservation logic, business models, database tables, authentication, business tests,
-and deployment configuration are not included. Tests for critical behaviors will
-be added when those features are implemented.
+- [Authentication, permissions, and migrations](AUTH.md)
+- [Unit, modular, regression, integration, and E2E tests](TESTING.md)
+- [Security review](SECURITY_REVIEW.md)
+
+Reservation logic and company management are not implemented. Current authentication
+limitations are documented in the authentication guide.
 
 ## References
 

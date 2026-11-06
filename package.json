@@ -10,6 +10,10 @@
     "npm": ">=11"
   },
   "scripts": {
+    "prepare": "sh scripts/install-hooks.sh",
+    "hooks:install": "sh scripts/install-hooks.sh",
+    "test:hooks": "sh scripts/test-hooks.sh",
+    "test:precommit": "npm run test:hooks && npm run typecheck && npm run format:check && npm test && npm run test:timing",
     "dev": "concurrently --kill-others --names frontend,backend \"npm run dev -w @tech-week/frontend\" \"npm run dev -w @tech-week/backend\"",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
@@ -19,10 +23,24 @@
     "check": "npm run lint && npm run typecheck && npm run format:check",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f"
+    "db:logs": "docker compose logs -f",
+    "db:migrate": "npm run db:migrate -w @tech-week/backend",
+    "admin:create": "npm run admin:create -w @tech-week/backend",
+    "test": "npm test -w @tech-week/backend",
+    "test:integration": "npm run test:integration -w @tech-week/backend",
+    "test:services:up": "docker compose -f compose.test.yaml up -d --wait",
+    "test:services:down": "docker compose -f compose.test.yaml down",
+    "test:unit": "npm run test:unit -w @tech-week/backend",
+    "test:modular": "npm run test:modular -w @tech-week/backend",
+    "test:regression": "npm run test:regression -w @tech-week/backend",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:timing && npm run test:integration && npm run test:e2e",
+    "test:security": "npm run test:security -w @tech-week/backend",
+    "test:timing": "npm run test:timing -w @tech-week/backend"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.64.0",
     "@types/node": "^24.0.0",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.0",

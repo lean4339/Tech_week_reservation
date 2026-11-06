@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Tests run against the working tree: require it to match the proposed commit.
+if ! git diff --quiet --ignore-submodules=none ||
+  [ -n "$(git ls-files --others --exclude-standard)" ]; then
+  echo 'Pre-commit: review and stage all changes before running tests.' >&2
+  echo 'Pre-commit: revisá y agregá todos los cambios al índice antes de probar.' >&2
+  exit 1
+fi
+
+npm run test:precommit

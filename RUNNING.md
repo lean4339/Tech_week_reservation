@@ -81,7 +81,8 @@ curl --fail http://127.0.0.1:3000/api/health
 
 The containers should be listed as `healthy`. Both endpoints should return
 `{"status":"ok"}`. The endpoint runs a PostgreSQL query and pings Redis.
-The frontend home page displays the project title.
+The home page redirects to your account when a valid session exists, or to `/login`.
+Create a `user` account at `/signup`.
 
 ## Logs and shutdown
 
@@ -148,8 +149,19 @@ in separate terminals. PostgreSQL and Redis must remain running.
 - **Dependency downloads fail:** check connectivity to the npm registry
   and run `npm ci` again.
 
-## Current scope
+## Authentication, migrations, and testing
 
-Only the initial setup and connection health checks are implemented. Redis is
-available for future authentication and log storage. Sessions, reservation logic,
-business tables, and automated tests for those features are not implemented yet.
+The backend automatically applies migrations at startup. To apply them explicitly
+and create an administrator from an interactive terminal:
+
+```bash
+npm run db:migrate
+npm run admin:create
+```
+
+The administrator command prompts for email and password, hides the password,
+and never modifies existing accounts. Public signup creates only `user` accounts.
+
+See [AUTH.md](AUTH.md) for sessions, permissions, and Redis logs, and
+[TESTING.md](TESTING.md) for the four testing categories and real integration tests.
+Reservation logic and company management are not implemented yet.

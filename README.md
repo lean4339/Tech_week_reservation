@@ -31,6 +31,9 @@ npm run dev
 Las copias de los archivos de entorno se hacen una sola vez. Los valores de ejemplo
 sirven para desarrollo local y coinciden con Docker Compose.
 
+`npm ci` activa las [pruebas automáticas antes de cada commit](TESTING.md).
+En instalaciones existentes: `npm run hooks:install`.
+
 - Frontend: <http://127.0.0.1:3000>.
 - Backend: <http://127.0.0.1:3001/health>.
 - Proxy del frontend hacia el backend: <http://127.0.0.1:3000/api/health>.
@@ -82,16 +85,18 @@ Si cambiás el puerto del backend, actualizá `BACKEND_URL` y reiniciá Next.js.
 Las credenciales de PostgreSQL se aplican al inicializar un volumen nuevo;
 cambiar `.env` no modifica las credenciales de una base existente.
 
-## Alcance de este setup
+## Autenticación y pruebas
 
-Incluye una página inicial mínima, conexiones a PostgreSQL y Redis, un endpoint
-de diagnóstico y logs JSON del backend mediante el logger integrado de Fastify.
-Redis queda disponible para incorporar autenticación y almacenamiento de logs
-en la siguiente etapa; todavía no guarda sesiones ni logs de la aplicación.
+Login, registro de usuarios, sesiones Redis, roles `admin`/`user` y auditoría de
+accesos ya están implementados. El backend aplica automáticamente la migración de
+`auth.users` al iniciar. Creá administradores con `npm run admin:create`.
 
-No hay lógica de reservas, modelos de negocio, tablas, autenticación, pruebas
-de negocio ni configuración de despliegue. Las pruebas de comportamientos críticos
-se incorporarán cuando se implementen esas funcionalidades.
+- [Autenticación, permisos y migraciones / Authentication](AUTH.md)
+- [Pruebas unitarias, modulares, de regresión e integrales / Testing](TESTING.md)
+- [Revisión de seguridad / Security review](SECURITY_REVIEW.md)
+
+No hay lógica de reservas ni gestión de empresas. Los límites de la autenticación
+actual están documentados en la guía de autenticación.
 
 ## Referencias
 
