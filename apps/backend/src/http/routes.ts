@@ -1,3 +1,5 @@
+import type { MetricsService } from '../metrics/model.js';
+import { metricsRoutes } from '../metrics/routes.js';
 import type { BusinessStore } from '../business/model.js';
 import { businessRoutes } from '../business/routes.js';
 import type { FastifyInstance } from 'fastify';
@@ -15,6 +17,7 @@ export function registerApi(
   security: SecurityStore,
   config: AuthConfig,
   business?: BusinessStore,
+  metrics?: MetricsService,
 ) {
   app.addHook('onRequest', csrfProtection(config));
   app.addHook(
@@ -28,6 +31,7 @@ export function registerApi(
     // Every route in this scope authenticates before validation and handlers.
     protectedRoutes.addHook('onRequest', auth.authenticate);
     profileRoutes(protectedRoutes, auth);
+    if (metrics) metricsRoutes(protectedRoutes, auth, metrics);
     if (business) businessRoutes(protectedRoutes, business, auth);
     protectedRoutes.register(async (admin) => {
       admin.addHook('preHandler', auth.requirePermission('admin:read'));

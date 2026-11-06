@@ -11,7 +11,7 @@ export function WorkspaceShell({
 }: {
   user: CurrentUser;
   title: string;
-  section: 'rooms' | 'reservations' | 'activity' | 'buildings';
+  section: 'rooms' | 'reservations' | 'activity' | 'buildings' | 'metrics';
   children: ReactNode;
 }) {
   const admin = user.permissions.includes('reservations:manage');
@@ -24,6 +24,7 @@ export function WorkspaceShell({
           key: 'buildings',
         },
         { href: '/admin/rooms', label: 'Administrar salas', key: 'rooms' },
+        { href: '/admin/metrics', label: 'Métricas', key: 'metrics' },
         { href: '/admin/activity', label: 'Actividad', key: 'activity' },
       ]
     : [

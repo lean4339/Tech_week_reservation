@@ -219,3 +219,14 @@ creating/rescheduling does not impose date filters. Pagination, permissions and
 status filtering (active by default) remain. Migration 005 indexes `(starts_at, id)`
 for chronological pagination without date bounds. Booking periods and availability
 queries still require start/end and retain their 366-day limit.
+
+## Métricas administrativas / Administrative metrics
+
+GET/HEAD `/admin/metrics`: sesión y `admin:read`, con `from`/`to` opcionales y
+conjuntos, hasta 366 días. Sin filtros, últimos 30 días de calendario UTC.
+PostgreSQL calcula y Redis guarda una caché versionada de 60 segundos.
+Ver [contrato, fórmulas e invalidación](METRICS.md).
+
+English: administrator-only metrics use an optional paired timestamp range,
+default to 30 UTC calendar days, and cache PostgreSQL aggregates in Redis for
+60 seconds with transactional revision invalidation. Definitions in METRICS.md.

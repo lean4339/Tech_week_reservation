@@ -249,3 +249,53 @@ English: the simplified UI adds direct booking without a prior search, mobile
 layout, in-dialog errors, retained inputs, Escape dismissal and focus restoration.
 Existing flows also check collapsed filters and immediate status changes.
 The full E2E suite contains 9 scenarios.
+
+## Métricas con Redis / Redis metrics
+
+`metrics.test.ts` forma parte de `npm test`, `test:security`, `test:modular` y
+`test:regression`: autentica GET/HEAD antes de efectos, exige rol admin, rechaza
+identidad falsificada y fechas inválidas, y comprueba caché, generaciones y fallos.
+`metrics.integration.test.ts` forma parte de `test:integration`: crea una base
+PostgreSQL temporal aislada, aplica migraciones, usa Redis real y comprueba sumas,
+recortes, días vacíos, cancelaciones, TTL, hits, invalidación de reservas/salas/
+edificios/empresas, rollback y reconstrucción de caché borrada o corrupta.
+`metrics.spec.ts` recorre el tablero real, verifica resultados tras una cancelación,
+restricciones de acceso, nombres tratados como texto y presentación móvil.
+
+English: metrics tests cover authenticated GET/HEAD boundaries, administrator-only
+access, input limits, cache generations and failure paths. Integration tests use
+a dedicated temporary PostgreSQL database and real Redis for calculations, clipping,
+zero-use days, TTL, cache hits, transactional invalidation, rollback and recovery.
+The browser test checks the dashboard, cancellation updates, access isolation,
+text rendering and mobile layout. See [metrics definitions](METRICS.md).
+
+## Ampliación de seguridad / Additional security coverage
+
+Se agregaron 11 casos: seis en `metrics-security.test.ts`, dos criptográficos en
+`security.test.ts`, dos subtests de integración y un escenario E2E de revocación.
+Las suites locales y el hook pre-commit incluyen el nuevo archivo. `test:security`
+lo ejecuta junto con las regresiones y las pruebas existentes.
+
+- Sesiones inactivas, revocadas, vencidas por inactividad y errores de los stores,
+  verificando ausencia de lecturas de métricas y redacción de errores.
+- Parámetros duplicados, objetos de query, SQL/CRLF codificados y cabeceras de IP
+  falsas: rechazo antes del cálculo o la caché.
+- Ocho solicitudes concurrentes comparten un cálculo; una falla no publica datos
+  y permite reintentar. Períodos y generaciones diferentes no comparten resultados.
+- Redis/PostgreSQL reales: revocación de rol, desactivación, logout y replay no leen
+  caché. Dos bases con igual contador y un Redis compartido mantienen separación.
+- Contraseñas multibyte, NUL y Unicode; encodings manipulados no pueden cambiar
+  el algoritmo, debilitar el costo ni pedir parámetros de costo desmedido.
+- Navegador: payload XSS almacenado se renderiza como texto; un admin degradado
+  con el tablero abierto recibe 403 al actualizar y 404 al volver a la página.
+
+Se ejecutaron dos experimentos de mutación en copias temporales de `dist` y los
+fixtures, sin modificar el código de la aplicación: quitar la comprobación de
+cuenta activa produjo `200 !== 401`; quitar la generación/revisión de la clave
+Redis hizo fallar la prueba de separación. Las copias se eliminaron al terminar.
+
+English: 11 new cases cover authentication failures, query pollution, IP spoofing,
+cache concurrency/recovery, namespace and period isolation, real role/account/session
+revocation, multibyte/KDF tampering, stored XSS and browser permission changes.
+Two isolated mutation experiments confirmed that the tests detect disabled-account
+access and removal of Redis namespace separation. Application code was unchanged.

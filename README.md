@@ -119,6 +119,7 @@ operaciones desde las siguientes pantallas:
   clientes, reprogramación y cancelación.
 - `/admin/buildings`: crear, editar, desactivar y reactivar edificios.
 - `/admin/rooms`: gestionar salas y asignarlas a edificios.
+- `/admin/metrics`: métricas de utilización y oportunidades comerciales, con caché Redis.
 - `/admin/activity`: eventos de autenticación y requests.
 - `/dashboard`: catálogo y disponibilidad por período para clientes, con reserva.
 - `/reservations`: reservas propias, filtros, reprogramación e historial de canceladas.
@@ -151,3 +152,5 @@ reservas sin borrar historial. Ver [contratos de edificios](BUSINESS_API.md).
 Las agendas muestran reservas sin exigir fechas. Podés filtrar por edificio, sala
 o empresa sin completar fechas, o usar solo desde/hasta. Se mantienen paginación
 y permisos; “Quitar filtros” vuelve a la vista sin fechas.
+
+[Métricas y caché Redis: fórmulas, límites y funcionamiento](METRICS.md).

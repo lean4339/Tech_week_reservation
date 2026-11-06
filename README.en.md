@@ -115,6 +115,7 @@ account ownership and concurrency controls. The frontend includes:
   rescheduling and cancellation.
 - `/admin/buildings`: create, edit, deactivate and reactivate buildings.
 - `/admin/rooms`: manage rooms and assign them to buildings.
+- `/admin/metrics`: utilization metrics and commercial opportunities, cached in Redis.
 - `/admin/activity`: authentication and HTTP request logs.
 - `/dashboard`: client room catalogue, period availability and booking.
 - `/reservations`: personal bookings, filters, rescheduling and cancelled history.
@@ -146,3 +147,5 @@ without deleting history. See [building contracts](BUSINESS_API.md).
 Reservation agendas open without date filters. Dates are optional, independent
 bounds; room/company/building filters work without them. Pagination and ownership
 checks remain enforced.
+
+[Metrics and Redis caching: formulas, limits and behavior](METRICS.md).

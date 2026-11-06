@@ -1,3 +1,5 @@
+import { postgresMetrics } from '../metrics/store.js';
+import { metricsService, redisMetrics } from '../metrics/cache.js';
 import type { FastifyInstance } from 'fastify';
 import postgres from '@fastify/postgres';
 import { Redis } from 'ioredis';
@@ -27,6 +29,10 @@ export async function connectStores(app: FastifyInstance) {
   return {
     users: postgresUsers(app.pg.pool),
     business: postgresBusiness(app.pg.pool),
+    metrics: metricsService(
+      postgresMetrics(app.pg.pool),
+      redisMetrics(app.redis),
+    ),
     security: redisSecurity(app.redis),
   };
 }
