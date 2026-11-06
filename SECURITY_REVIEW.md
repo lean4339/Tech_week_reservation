@@ -20,8 +20,10 @@ scope limits are recorded in DEPENDENCY_AUDIT.md.
 
 ## Separación de administración, cliente y dominios — 2026-11-06
 
-Revisión del árbol de trabajo, todavía sin nuevo SHA. OWASP Top 10 2025 estable,
-fuentes de esta misma sesión. Sustituye los recorridos de archivos históricos
+Revisión del commit `38cb675fff72a56c19996426a4a74d9d52e6964b` frente a su
+primer padre `1d6df6b65c7c3409c069fede0621256da71f0507`, incluyendo el registro
+real de rutas y sus controles. OWASP Top 10 2025 estable, fuentes de esta misma
+sesión. Sustituye los recorridos de archivos históricos
 que mencionan `business/`, `admin/routes.ts` o `metrics/routes.ts` más abajo.
 
 Frontera actual: `app.ts → http/routes.ts → authenticate (onRequest) → routers

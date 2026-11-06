@@ -2,7 +2,7 @@
 
 [Español](LEVANTAR.md) | [English](RUNNING.md)
 
-Esta guía corresponde al setup actual: Next.js y Fastify con TypeScript,
+Esta guía corresponde a la aplicación de reservas: Next.js y Fastify con TypeScript,
 PostgreSQL y Redis en Docker, ESLint y Prettier. No hace falta Dockerizar
 el frontend ni el backend: ambos se ejecutan con Node.js en tu máquina.
 
@@ -23,11 +23,7 @@ git clone https://github.com/lean4339/Tech_week_reservation.git
 cd Tech_week_reservation
 ```
 
-Si ya lo tenés, abrí una terminal dentro de esa carpeta. En la instalación actual:
-
-```bash
-cd /home/leandro/Escritorio/Tech_week_reservation
-```
+Si ya lo tenés, abrí una terminal dentro de la carpeta del repositorio.
 
 Instalá las dependencias de ambos proyectos desde la raíz:
 
@@ -86,7 +82,9 @@ Podés crear una cuenta `user` en `/signup`.
 ## Logs y apagado
 
 Los logs de frontend y backend aparecen en la terminal de `npm run dev`.
-Fastify escribe logs JSON por consola; todavía no los almacena en Redis.
+Fastify escribe logs JSON por consola. Los eventos de autenticación y requests
+se guardan además en Redis, con límites y vencimiento, y se consultan en
+`/admin/activity`; no son una copia íntegra de los logs del proceso.
 
 Para ver los logs de PostgreSQL y Redis:
 
@@ -169,4 +167,5 @@ cuentas existentes. El registro público crea únicamente `user`.
 
 Consultá [AUTH.md](AUTH.md) para sesiones, permisos y logs Redis, y
 [TESTING.md](TESTING.md) para las cuatro categorías de pruebas y la integración real.
-La lógica de reservas y la gestión de empresas todavía no están implementadas.
+Para evaluar edificios, salas, reservas, aislamiento y métricas, seguí el
+[recorrido de entrega](DELIVERY.md).

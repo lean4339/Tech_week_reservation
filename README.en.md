@@ -1,155 +1,152 @@
-# Tech Week Reservation
+# Tech Week Reservation — Fontanella SRL Challenge
 
 [Español](README.md) | [English](README.en.md)
 
-Initial setup with Next.js (App Router) and Fastify, both using strict TypeScript.
-ESLint and Prettier are configured for both applications. PostgreSQL and Redis run
-in Docker; the frontend and backend run locally using npm workspaces.
+A web application for client companies to check room availability and manage their
+bookings. Administrators manage buildings and rooms, inspect a global agenda and
+analyze utilization by room, building and company.
 
-Step-by-step guide: [running and stopping the project](RUNNING.md).
-Also available in Spanish: [cómo levantar y detener el proyecto](LEVANTAR.md).
+The implementation prioritizes **preventing concurrent overlaps**, **isolating each
+company's bookings** and **preserving history**. It includes operation feedback,
+conflict errors and utilization reports cached in Redis.
 
-## Requirements
+## Run from a fresh clone
 
-- Node.js 24 and npm 11 or later (`nvm use` if you use nvm).
-- Docker with Docker Compose and access to the Docker service.
-- Available ports: 3000 (frontend), 3001 (backend), 5432 (PostgreSQL), and 6379 (Redis).
-
-## Run locally
-
-From the repository root:
+Requirements: Node.js **24**, npm **11+**, Docker and Docker Compose. Local ports:
+3000, 3001, 5432 and 6379. With nvm, run `nvm install` and `nvm use` in the repository.
 
 ```bash
+git clone https://github.com/lean4339/Tech_week_reservation.git
+cd Tech_week_reservation
 npm ci
 cp .env.example .env
 cp apps/backend/.env.example apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env.local
 npm run db:up
+npm run db:migrate
+npm run admin:create
 npm run dev
 ```
 
-Copy the environment files only once. The example values are for local development
-and match the Docker Compose configuration.
+Copy environment files only for the first installation; preserve existing settings.
+Examples match Compose and are intended for local development. Admin creation is
+interactive: enter an email and a hidden **15–128 character** password. Spaces and
+Unicode are allowed, no uppercase/digit/symbol combination is mandatory, and known
+blocked common passwords are rejected. The command explains errors and allows retries.
+It does not promote existing accounts. Public signup cannot create administrators.
 
-`npm ci` enables [automatic tests before each commit](TESTING.md).
-For existing installations, run `npm run hooks:install`.
-
-- Frontend: <http://127.0.0.1:3000>.
+- Application: <http://127.0.0.1:3000>.
 - Backend: <http://127.0.0.1:3001/health>.
-- Frontend proxy to the backend: <http://127.0.0.1:3000/api/health>.
+- Backend through Next.js: <http://127.0.0.1:3000/api/health>.
 
-`GET /health` checks the PostgreSQL and Redis connections: it returns 200 with
-`{"status":"ok"}` if both respond, or 503 if either fails while the server is running.
-Redis must be available for the backend to start.
+Both health endpoints should return `{"status":"ok"}`. PostgreSQL and Redis must
+be available at startup; migrations also run automatically. There are no preloaded
+accounts or rooms: sign in as admin, create one building and three rooms. Client
+companies register at `/signup`, then sign in at `/login`.
+[Evaluation walkthrough and example data](DELIVERY.md).
 
-Stop `npm run dev` with Ctrl+C. Stop the containers with `npm run db:down`;
-data is preserved in Docker volumes. `npm run db:logs` shows the container logs.
+Ctrl+C stops the applications. `npm run db:down` stops containers while preserving
+volumes. Resume with `npm run db:up` and `npm run dev`.
+[Detailed setup and troubleshooting](RUNNING.md).
 
-## Structure
-
-```text
-apps/
-  frontend/   Next.js + React + TypeScript
-  backend/    Fastify + TypeScript + PostgreSQL/Redis connections
-compose.yaml  PostgreSQL 18 and Redis 8 with volumes and health checks
-```
-
-## Commands
+## Test and build
 
 ```bash
-npm run check          # ESLint, TypeScript, and formatting checks
-npm run format         # Apply Prettier formatting
-npm run build          # Build both applications
-npm run dev -w @tech-week/frontend
-npm run dev -w @tech-week/backend
+npm run check                 # ESLint, TypeScript and formatting
+npm run build                 # Build both applications
+npm test                      # Local tests, no Docker required
+npx playwright install chromium
+npm run test:services:up
+npm run test:all               # npm audit, local, timing, integration and E2E
+npm run test:services:down
 ```
 
-After building, run the compiled applications in two separate terminals:
+On Linux, if Playwright reports missing system libraries, run
+`npx playwright install --with-deps chromium`. Integration and E2E use PostgreSQL
+55432, Redis 56379/DB 15 and applications 3100/3101, separate from development data.
+Audits require npm registry access; network failures also fail validation.
 
-```bash
-npm run start -w @tech-week/backend
-npm run start -w @tech-week/frontend
-```
+`npm ci` installs a local pre-commit hook running dependency auditing, hook checks,
+TypeScript, formatting, local tests and timing. ESLint, integration and E2E run
+separately with the commands above. Unit, modular, regression and E2E suites are
+explained in [TESTING.md](TESTING.md). Latest verified results: [DELIVERY.md](DELIVERY.md).
 
-The containers must also be running in this mode.
+## Features
 
-## Configuration
+| Role           | Screens and operations                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Client company | `/dashboard`: catalog, availability and direct booking; `/reservations`: own bookings, rescheduling and cancellation |
+| Administrator  | `/admin`: global agenda with optional company, room, building and date filters                                       |
+| Administrator  | `/admin/buildings` and `/admin/rooms`: create, edit, assign and deactivate                                           |
+| Administrator  | `/admin/metrics`: usage, cancellations, rankings, low-use periods and commercial follow-up                           |
+| Administrator  | `/admin/activity`: authentication and request events stored in Redis                                                 |
 
-- `.env`: PostgreSQL settings and ports published by Docker Compose.
-- `apps/backend/.env`: `HOST`, `PORT`, `LOG_LEVEL`, `DATABASE_URL`, and `REDIS_URL`.
-- `apps/frontend/.env.local`: `BACKEND_URL`, used by the Next.js proxy.
+Date filters are optional when listing bookings. The catalog opens without a time
+range; availability checks require start/end times. Checking availability does not
+hold a room: PostgreSQL confirms the booking and a competing request can receive 409. Cancellation retains the record and releases its interval.
 
-If you change credentials or ports in Compose, update the backend connection URLs.
-If you change the backend port, update `BACKEND_URL` and restart Next.js.
-PostgreSQL credentials are applied when a new volume is initialized;
-changing `.env` does not update credentials in an existing database.
+## Architecture and decisions
 
-## Authentication and testing
+Next.js with React/TypeScript, Fastify with Node.js/TypeScript, PostgreSQL 18 and
+Redis 8. An npm workspaces monorepo coordinates installation, scripts and versions.
 
-Login, user signup, Redis sessions, `admin`/`user` roles, and access auditing are
-implemented. The backend automatically applies the `auth.users` migration at
-startup. Create administrators with `npm run admin:create`.
+- **One client account represents one company**, using its user ID and
+  `business_name`; organizations with multiple staff accounts are outside this version.
+- **PostgreSQL is authoritative**: foreign keys and GiST exclusion over `[start, end)`
+  intervals prevent overlapping bookings; writes use transactions.
+- **No N+1 agenda queries**: JOINs retrieve room, building and company details,
+  with ownership filters and pagination enforced in SQL.
+- **Responsibilities are separated**: `http/admin`, `http/client` and a read-only
+  catalog; per-domain services and repositories under `modules`. Shared authentication
+  runs before handlers and permissions are checked on the server.
+- **Redis** stores sessions, rate limits, security events and cached metrics.
+  PostgreSQL computes reports with transactional revision invalidation. Redis does
+  not replace persistent booking storage.
 
-- [Authentication, permissions, and migrations](AUTH.md)
-- [Unit, modular, regression, integration, and E2E tests](TESTING.md)
-- [Security review](SECURITY_REVIEW.md)
+[Architecture and boundaries](ARCHITECTURE.md) · [Design reasoning](DECISIONS.md) ·
+[API](BUSINESS_API.md) · [Metrics and formulas](METRICS.md).
 
-## Business tables
+## Assumptions, limitations and next version
 
-[Migration 003](apps/backend/migrations/003_rooms_reservations.sql) creates
-`public.rooms` (name, location, capacity, active flag) and `public.reservations`
-(room, client account, start/end, creation/cancellation timestamps).
+Bookings are continuous periods of at most 366 days, starting in the future. There
+are no recurrence rules or opening hours. Forms use the device time zone, PostgreSQL
+stores timezone-aware instants, and reports aggregate in UTC.
+Occupancy is **theoretical, based on 24 hours per room since creation**, including
+currently inactive rooms. It does not measure attendance or revenue. Commercial
+opportunities are visible heuristics, not automatic discounts. Rankings show up to
+100 entries.
 
-Each `auth.users` account represents a client and carries `business_name`; no
-separate company or time-unit table is needed. Reservations use finite
-`timestamptz` intervals with exclusive end boundaries, allowing adjacent bookings.
-A GiST exclusion prevents active overlaps for the same room across clients.
-Cancellation preserves history and releases the interval; foreign keys restrict
-deleting referenced rooms and accounts. Room/start and client/start indexes
-support agendas; JOINs return room and business details in one query.
+The scope is local: no cloud deployment, payments, password recovery, email
+verification or MFA. Proxy trust is not enabled. Responses use HTTP statuses and
+messages; uniform application codes and response schemas remain future work.
+No claim of absolute security or exhaustive OWASP compliance is made.
 
-The [rooms and reservations API](BUSINESS_API.md) provides CRUD with role permissions,
-account ownership and concurrency controls. The frontend includes:
+Next steps: business opening hours and closure history, multiple staff per company,
+recurring bookings, consistent response contracts, load testing and remote CI.
+The latest npm audit found no advisories; **ESLint 9 remains end-of-life** and a
+compatible migration is pending. Docker images and the OS were not scanned.
+[Dependency audit](DEPENDENCY_AUDIT.md) · [Security review](SECURITY_REVIEW.md).
 
-- `/admin`: administrator agenda, room/date/company filters, booking for clients,
-  rescheduling and cancellation.
-- `/admin/buildings`: create, edit, deactivate and reactivate buildings.
-- `/admin/rooms`: manage rooms and assign them to buildings.
-- `/admin/metrics`: utilization metrics and commercial opportunities, cached in Redis.
-- `/admin/activity`: authentication and HTTP request logs.
-- `/dashboard`: client room catalogue, period availability and booking.
-- `/reservations`: personal bookings, filters, rescheduling and cancelled history.
+## Use of artificial intelligence
 
-Admins land on the agenda; clients land on the catalogue. Create a building and
-then assign rooms to it as an admin; client accounts sign up at `/signup`. Forms use the device time zone and send
-UTC timestamps. Booking/cancellation confirmations and server errors are displayed,
-including conflicts caused by a booking made after the availability check.
-Recurring bookings and opening hours are not implemented yet.
-Current authentication limitations are documented in [AUTH.md](AUTH.md).
+I used **OpenAI Codex** to implement and refactor TypeScript/SQL, generate tests,
+run checks and prepare documentation. I used **my own `security-review` skill,
+which I created**, to guide authentication, authorization, cryptography, timing
+and security-test reviews using OWASP references. Technical direction, priorities and supervision
+were mine; responsibility for the delivered implementation remains with me.
 
-Lists load immediately with advanced filters collapsed. Status changes apply
-directly. To book, select a room, enter its time period and confirm; checking
-availability beforehand is optional. Create, edit and cancel actions open dialogs
-with inline errors and Escape dismissal.
+I selected the stack and requested incremental work: setup, business model, CRUD,
+interface and metrics. My questions and corrections shaped the result: one account
+per company, no N+1 queries, role-restricted writes, four test categories, pre-commit
+checks, IP request logging, cryptographic review, timing diagnostics and dependency
+auditing.
 
-## References
-
-- [ESLint with Next.js](https://nextjs.org/docs/app/api-reference/config/eslint)
-- [Fastify PostgreSQL plugin](https://github.com/fastify/fastify-postgres)
-- [Fastify Redis plugin](https://github.com/fastify/fastify-redis)
-- [Official PostgreSQL image](https://hub.docker.com/_/postgres)
-
-Migration `004_buildings.sql` preserves legacy rooms and bookings. Assign each legacy
-room to a building in `/admin/rooms` before accepting new reservations; the migration
-does not invent buildings or addresses. Building deactivation blocks new bookings
-without deleting history. See [building contracts](BUSINESS_API.md).
-
-Reservation agendas open without date filters. Dates are optional, independent
-bounds; room/company/building filters work without them. Pagination and ownership
-checks remain enforced.
-
-[Metrics and Redis caching: formulas, limits and behavior](METRICS.md).
-
-[Auditoría de dependencias / Dependency audit](DEPENDENCY_AUDIT.md).
-
-[Arquitectura del backend / Backend architecture](ARCHITECTURE.md)
+I corrected AI proposals that mixed responsibilities or produced an unsuitable
+workflow: shared authentication middleware, separate administrator/client routes,
+buildings, optional date filters and business management screens replacing a
+logs-centered admin view. I also requested explicit password requirements and
+rejected treating the OWASP review as complete without a dependency audit.
+Cryptographic checks covered scrypt, hash comparison, Unicode passwords, random
+tokens and session keys derived by hashing tokens. Functionality claims rely on
+executed tests; timing diagnostics and audits retain
+explicit limitations. [Detailed decision record](DECISIONS.md).
