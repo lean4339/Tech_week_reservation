@@ -66,9 +66,9 @@ la exclusión PostgreSQL impide superposiciones aun con concurrencia. Conflictos
 contención devuelven 409; fallos inesperados devuelven 503 sin detalles internos.
 Los permisos se aplican en la API; no se agregaron cuentas PostgreSQL por usuario ni RLS.
 
-La implementación está en `apps/backend/src/business/`: `routes.ts` monta permisos
-por operación, `schemas.ts` valida HTTP, `service.ts` aplica reglas de negocio,
-`store.ts` ejecuta SQL y transacciones, y `model.ts` define contratos y errores.
+Las rutas se separan en `apps/backend/src/http/admin/`, `http/client/` y
+`http/catalog/`. Los modelos, esquemas, servicios y repositorios están separados
+por dominio en `modules/`. Ver [arquitectura del backend](ARCHITECTURE.md).
 Estas operaciones están conectadas a las pantallas `/admin`, `/admin/rooms`,
 `/dashboard` y `/reservations`. Los logs están en `/admin/activity`.
 No hay recurrencias ni horarios de apertura.
@@ -132,8 +132,9 @@ PostgreSQL exclusion constraints prevent concurrent overlaps. Conflicts/contenti
 return 409; unexpected failures return sanitized 503 responses. API authorization
 does not create individual database logins or PostgreSQL RLS policies.
 
-`apps/backend/src/business/` separates routes/permissions, HTTP schemas, business
-rules, repository/transactions and models/errors. Management screens are available
+`apps/backend/src/http/` separates admin, client and shared catalog routers;
+`modules/` separates domain models, schemas, services and repositories. See
+[backend architecture](ARCHITECTURE.md). Management screens are available
 at `/admin`, `/admin/rooms`, `/dashboard` and `/reservations`; logs live at
 `/admin/activity`. Recurrence rules and opening hours are not implemented.
 

@@ -26,7 +26,7 @@ su ciclo de vida están en `db/`.
 - `http/routes.ts`: registra las rutas públicas y el grupo privado. Todas las
   rutas del grupo privado heredan autenticación; el grupo administrativo hereda
   además `admin:read`. Cada ruta declara el permiso de la operación.
-- `auth/routes.ts` y `admin/routes.ts`: contratos HTTP y controles por ruta.
+- `auth/routes.ts` y `http/admin/routes.ts`: contratos HTTP y controles por ruta.
 - `auth/controllers.ts`: transforma solicitudes y resultados en respuestas HTTP.
 - `auth/service.ts`: registro, política de contraseña, login, rotación, logout
   y auditoría de autenticación; no depende de Fastify.
@@ -156,7 +156,7 @@ contains the principal without password hashes or session tokens. `http/routes.t
 registers public routes and a protected scope that inherits authentication; the
 admin scope also inherits `admin:read`. Routes declare operation permissions.
 
-`auth/routes.ts` and `admin/routes.ts` declare HTTP contracts. Auth controllers
+`auth/routes.ts` and `http/admin/routes.ts` declare HTTP contracts. Auth controllers
 translate HTTP requests/responses; `auth/service.ts` owns signup, password policy,
 login, session rotation, logout and authentication auditing without depending on
 Fastify. `auth/stores.ts` implements PostgreSQL/Redis adapters. Schemas, cookies,

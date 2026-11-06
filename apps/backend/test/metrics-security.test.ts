@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { buildApp } from '../dist/app.js';
-import { metricsService, metricsKey } from '../dist/metrics/cache.js';
+import { metricsService, metricsKey } from '../dist/modules/metrics/cache.js';
 import { MemoryUsers, MemorySecurity } from './helpers.ts';
-import type { Metrics, MetricsPeriod } from '../src/metrics/model.ts';
+import type { Metrics, MetricsPeriod } from '../src/modules/metrics/model.ts';
 
 const period = {
   from: '2030-01-01T00:00:00.000Z',

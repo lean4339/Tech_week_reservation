@@ -2,8 +2,9 @@ import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { buildApp } from '../dist/app.js';
-import { validatePeriod } from '../dist/business/service.js';
-import { BusinessError, type BusinessStore } from '../dist/business/model.js';
+import { validatePeriod } from '../dist/modules/shared/period.js';
+import { BusinessError } from '../dist/modules/shared/errors.js';
+import type { ProductStores } from '../src/modules/stores.ts';
 import { MemoryUsers, MemorySecurity, headers } from './helpers.ts';
 import { ABSOLUTE_MS } from '../dist/auth/model.js';
 
@@ -32,9 +33,11 @@ const routes = [
   { method: 'GET', url: '/admin/clients' },
   { method: 'HEAD', url: '/admin/clients' },
   { method: 'GET', url: '/rooms' },
+  { method: 'HEAD', url: '/rooms' },
   { method: 'GET', url: `/rooms/${id}` },
   { method: 'HEAD', url: `/rooms/${id}` },
   { method: 'GET', url: `/rooms/${id}/availability?${query}` },
+  { method: 'HEAD', url: `/rooms/${id}/availability?${query}` },
   {
     method: 'POST',
     url: '/rooms',
@@ -44,6 +47,7 @@ const routes = [
   { method: 'DELETE', url: `/rooms/${id}`, payload: {} },
   ...['/reservations', '/admin/reservations'].flatMap((path) => [
     { method: 'GET', url: `${path}?${query}` },
+    { method: 'HEAD', url: `${path}?${query}` },
     { method: 'GET', url: `${path}/${id}` },
     { method: 'HEAD', url: `${path}/${id}` },
     {
@@ -63,33 +67,29 @@ async function fixture(t: TestContext) {
   const users = new MemoryUsers();
   const security = new MemorySecurity();
   let calls = 0;
-  const business = Object.fromEntries(
-    [
-      'clients',
-      'buildings',
-      'building',
-      'createBuilding',
-      'updateBuilding',
-      'rooms',
-      'room',
-      'createRoom',
-      'updateRoom',
-      'availability',
-      'reservations',
-      'reservation',
-      'createReservation',
-      'updateReservation',
-      'cancelReservation',
-    ].map((method) => [
-      method,
-      async () => {
-        calls++;
-        return {};
-      },
+  const stub = () => async () => {
+    calls++;
+    return {};
+  };
+  const product = Object.fromEntries(
+    Object.entries({
+      clients: ['clients'],
+      buildings: ['buildings', 'building', 'createBuilding', 'updateBuilding'],
+      rooms: ['rooms', 'room', 'createRoom', 'updateRoom', 'availability'],
+      reservations: [
+        'reservations',
+        'reservation',
+        'createReservation',
+        'updateReservation',
+        'cancelReservation',
+      ],
+    }).map(([name, methods]) => [
+      name,
+      Object.fromEntries(methods.map((method) => [method, stub()])),
     ]),
-  ) as unknown as BusinessStore;
+  ) as unknown as ProductStores;
   const app = buildApp({
-    stores: { users, security, business },
+    stores: { users, security, product },
     logger: false,
   });
   t.after(() => app.close());
@@ -104,7 +104,7 @@ async function fixture(t: TestContext) {
     app,
     security,
     user,
-    business,
+    product,
     calls: () => calls,
     cookie: `tech_week_session=${token}`,
     token,
@@ -323,7 +323,7 @@ test('business routes fail closed on session storage errors and redact unexpecte
   assert(!failedAuth.body.includes('redis-private-credential'));
   assert.equal(f.calls(), 0);
   f.security.readSession = readSession;
-  f.business.rooms = async () => {
+  f.product.rooms.rooms = async () => {
     throw new Error('postgres-private-credential SQL private-data');
   };
   const failedDatabase = await f.app.inject({
@@ -377,5 +377,160 @@ test('building inputs and room assignments reject invalid or privileged fields b
       (await f.app.inject({ url, headers: { cookie: f.cookie } })).statusCode,
       url.startsWith('/reservations') ? 403 : 400,
     );
+  assert.equal(f.calls(), 0);
+});
+
+test('client reservation routes always pass the session owner; admin routes pass an explicit administrative scope', async (t) => {
+  const f = await fixture(t);
+  const observed: unknown[] = [];
+  const store = f.product.reservations;
+  store.reservations = async (_filter, scope) => {
+    observed.push(scope);
+    return [];
+  };
+  store.reservation = async (_id, scope) => {
+    observed.push(scope);
+    return {} as never;
+  };
+  store.updateReservation = async (_id, _period, scope) => {
+    observed.push(scope);
+    return {} as never;
+  };
+  store.cancelReservation = async (_id, scope) => {
+    observed.push(scope);
+    return {} as never;
+  };
+  store.createReservation = async (_input, userId) => {
+    observed.push({ userId });
+    return {} as never;
+  };
+  const otherUserId = randomUUID();
+  const requestHeaders = {
+    ...headers,
+    cookie: f.cookie,
+    'x-user-id': otherUserId,
+    'x-role': 'admin',
+  };
+  for (const route of [
+    { method: 'GET', url: '/reservations' },
+    { method: 'GET', url: `/reservations/${id}` },
+    { method: 'PATCH', url: `/reservations/${id}`, payload: period },
+    { method: 'DELETE', url: `/reservations/${id}`, payload: {} },
+  ] as const) {
+    assert.equal(
+      (await f.app.inject({ ...route, headers: requestHeaders })).statusCode,
+      200,
+    );
+  }
+  assert.deepEqual(
+    observed,
+    Array.from({ length: 4 }, () => ({ ownerId: f.user.id })),
+  );
+  observed.length = 0;
+  assert.equal(
+    (
+      await f.app.inject({
+        method: 'POST',
+        url: '/reservations',
+        headers: requestHeaders,
+        payload: { roomId: id, ...period },
+      })
+    ).statusCode,
+    201,
+  );
+  assert.deepEqual(observed, [{ userId: f.user.id }]);
+  observed.length = 0;
+  f.user.role = 'admin';
+  for (const route of [
+    { method: 'GET', url: '/admin/reservations' },
+    { method: 'GET', url: `/admin/reservations/${id}` },
+    { method: 'PATCH', url: `/admin/reservations/${id}`, payload: period },
+    { method: 'DELETE', url: `/admin/reservations/${id}`, payload: {} },
+  ] as const) {
+    assert.equal(
+      (await f.app.inject({ ...route, headers: requestHeaders })).statusCode,
+      200,
+    );
+  }
+  assert.deepEqual(
+    observed,
+    Array.from({ length: 4 }, () => ({ admin: true })),
+  );
+  observed.length = 0;
+  assert.equal(
+    (
+      await f.app.inject({
+        method: 'POST',
+        url: '/admin/reservations',
+        headers: requestHeaders,
+        payload: { roomId: id, userId: otherUserId, ...period },
+      })
+    ).statusCode,
+    201,
+  );
+  assert.deepEqual(observed, [{ userId: otherUserId }]);
+  observed.length = 0;
+  assert.equal(
+    (await f.app.inject({ url: '/reservations', headers: requestHeaders }))
+      .statusCode,
+    403,
+  );
+  f.user.role = 'user';
+  assert.equal(
+    (
+      await f.app.inject({
+        url: '/admin/reservations',
+        headers: requestHeaders,
+      })
+    ).statusCode,
+    403,
+  );
+  assert.deepEqual(observed, []);
+});
+
+test('shared catalog remains readable after admin rejection and never exposes inactive records to clients', async (t) => {
+  const f = await fixture(t);
+  const visibility: boolean[] = [];
+  f.product.rooms.rooms = async (_page, includeInactive) => {
+    visibility.push(includeInactive);
+    return [];
+  };
+  f.product.buildings.buildings = async (_page, includeInactive) => {
+    visibility.push(includeInactive);
+    return [];
+  };
+  const requestHeaders = { ...headers, cookie: f.cookie };
+  assert.equal(
+    (await f.app.inject({ url: '/admin/clients', headers: requestHeaders }))
+      .statusCode,
+    403,
+  );
+  for (const url of ['/rooms', '/buildings']) {
+    assert.equal(
+      (await f.app.inject({ url, headers: requestHeaders })).statusCode,
+      200,
+    );
+  }
+  assert.deepEqual(visibility, [false, false]);
+  f.user.role = 'admin';
+  for (const url of ['/rooms', '/buildings']) {
+    assert.equal(
+      (await f.app.inject({ url, headers: requestHeaders })).statusCode,
+      200,
+    );
+  }
+  assert.deepEqual(visibility, [false, false, true, true]);
+  f.user.role = 'user';
+  assert.equal(
+    (
+      await f.app.inject({
+        method: 'DELETE',
+        url: `/rooms/${id}`,
+        headers: requestHeaders,
+        payload: {},
+      })
+    ).statusCode,
+    403,
+  );
   assert.equal(f.calls(), 0);
 });

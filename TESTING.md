@@ -323,3 +323,17 @@ fails on low-or-higher advisories and registry errors, and runs before security,
 full-suite and pre-commit checks. Production-only auditing is available separately.
 Signature verification and lockfile-based CycloneDX generation are shown above.
 See [dependency audit and remediation](DEPENDENCY_AUDIT.md).
+
+## Separación de rutas y módulos / Router and module separation
+
+Las suites existentes ejercitan la composición real de `buildApp`, con los
+repositorios por dominio. `business.test.ts` cubre además el propietario derivado
+de sesión en cada operación, el alcance administrativo explícito, HEAD de catálogo
+y reservas, y la independencia del catálogo respecto del rechazo administrativo.
+Las pruebas de integración conservan PostgreSQL y Redis reales, IDOR sin efectos,
+concurrencia y conteo de consultas; los E2E conservan los contratos del frontend.
+
+Existing suites exercise the actual application composition with separate domain
+repositories. Additional checks observe session-derived ownership, explicit admin
+scope, HEAD protection and sibling-router isolation. Real database integration
+and browser tests verify the unchanged SQL guarantees and frontend contracts.

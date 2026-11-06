@@ -1,4 +1,4 @@
-import { BusinessError } from '../business/model.js';
+import { BusinessError } from '../modules/shared/errors.js';
 import type { FastifyInstance, FastifyError } from 'fastify';
 import type { AuthConfig } from '../auth/config.js';
 import { PasswordBusyError, InvalidPasswordError } from '../auth/password.js';

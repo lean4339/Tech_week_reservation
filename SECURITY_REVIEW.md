@@ -18,6 +18,39 @@ production npm audits, registry signatures and clean installation were verified.
 An ESLint 9 end-of-life compatibility issue remains explicitly open. Details and
 scope limits are recorded in DEPENDENCY_AUDIT.md.
 
+## Separación de administración, cliente y dominios — 2026-11-06
+
+Revisión del árbol de trabajo, todavía sin nuevo SHA. OWASP Top 10 2025 estable,
+fuentes de esta misma sesión. Sustituye los recorridos de archivos históricos
+que mencionan `business/`, `admin/routes.ts` o `metrics/routes.ts` más abajo.
+
+Frontera actual: `app.ts → http/routes.ts → authenticate (onRequest) → routers
+hermanos admin/client/catalog → permiso por operación → servicio del dominio →
+repositorio SQL`. Todas las rutas administrativas heredan además `admin:read`
+en `onRequest`, incluyendo escrituras en URLs heredadas `/rooms` y `/buildings`.
+Métricas mantiene autorización antes de leer Redis o PostgreSQL.
+
+A01/A07: rutas cliente y admin explícitas; identidad propia tomada de sesión y
+alcance SQL construido por el servidor. A02/A06: encapsulación Fastify, catálogo
+solo de lectura y dependencias por dominio. A05/A08/A10: esquemas estrictos, SQL
+parametrizado, restricciones y transacciones preservadas con el mismo PoolClient.
+A04/A09: criptografía y auditoría conservadas; no se modifican sus mecanismos.
+A03: sin cambio de dependencias; sigue pendiente el soporte de ESLint documentado.
+
+Validación de esta refactorización: `npm test` (63 backend + 4 frontend),
+`npm run test:integration` (24), `npm run test:e2e` (11), `npm run test:timing`
+(1), `npm run check` y `npm run build`: aprobados. Auditoría npm completa: cero
+hallazgos. La comparación del AST confirmó las mismas 26 sentencias SQL y de
+transacción al dividir los repositorios. Sin vulnerabilidades nuevas comprobadas
+en el alcance revisado; no se afirma cobertura exhaustiva. No se repitieron las
+mutaciones de pruebas históricas ni se escanearon imágenes Docker/SO.
+
+English: explicit admin/client adapters replace role-switching route registration.
+All private routes inherit authentication; administrative routes additionally
+inherit an admin guard. Domain repositories preserve owner predicates and atomic
+transactions. No dependency, cryptography or logging mechanism was changed.
+See [architecture and route policies](ARCHITECTURE.md).
+
 ## Alcance y metodología
 
 - Proyecto: `Tech_week_reservation`.

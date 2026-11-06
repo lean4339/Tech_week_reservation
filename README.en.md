@@ -151,3 +151,5 @@ checks remain enforced.
 [Metrics and Redis caching: formulas, limits and behavior](METRICS.md).
 
 [Auditoría de dependencias / Dependency audit](DEPENDENCY_AUDIT.md).
+
+[Arquitectura del backend / Backend architecture](ARCHITECTURE.md)

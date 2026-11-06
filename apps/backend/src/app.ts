@@ -1,5 +1,5 @@
-import type { MetricsService } from './metrics/model.js';
-import type { BusinessStore } from './business/model.js';
+import type { MetricsService } from './modules/metrics/model.js';
+import type { ProductStores } from './modules/stores.js';
 import Fastify from 'fastify';
 import { authConfig } from './auth/config.js';
 import type { SecurityStore, UserStore } from './auth/model.js';
@@ -15,7 +15,7 @@ export function buildApp(
     stores?: {
       users: UserStore;
       security: SecurityStore;
-      business?: BusinessStore;
+      product?: ProductStores;
       metrics?: MetricsService;
     };
     logger?: boolean;
@@ -37,7 +37,7 @@ export function buildApp(
         stores.users,
         stores.security,
         config,
-        stores.business,
+        stores.product,
         stores.metrics,
       ),
     );

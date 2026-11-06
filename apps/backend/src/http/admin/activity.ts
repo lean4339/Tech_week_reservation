@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
-import type { AuthMiddleware } from '../auth/middleware.js';
-import type { SecurityStore, UserStore } from '../auth/model.js';
+import type { AuthMiddleware } from '../../auth/middleware.js';
+import type { SecurityStore, UserStore } from '../../auth/model.js';
 
-export function adminRoutes(
+export function activityRoutes(
   app: FastifyInstance,
   users: UserStore,
   security: SecurityStore,

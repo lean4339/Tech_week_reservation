@@ -1,22 +1,22 @@
-import type { MetricsService } from '../metrics/model.js';
-import { metricsRoutes } from '../metrics/routes.js';
-import type { BusinessStore } from '../business/model.js';
-import { businessRoutes } from '../business/routes.js';
 import type { FastifyInstance } from 'fastify';
 import type { AuthConfig } from '../auth/config.js';
 import type { SecurityStore, UserStore } from '../auth/model.js';
+import type { ProductStores } from '../modules/stores.js';
+import type { MetricsService } from '../modules/metrics/model.js';
 import { registerAuthentication } from '../auth/middleware.js';
 import { csrfProtection } from '../auth/csrf.js';
 import { rateLimit } from '../auth/rate-limit.js';
 import { profileRoutes, publicAuthRoutes } from '../auth/routes.js';
-import { adminRoutes } from '../admin/routes.js';
+import { registerAdminRoutes } from './admin/routes.js';
+import { registerClientRoutes } from './client/routes.js';
+import { registerCatalogRoutes } from './catalog/routes.js';
 
 export function registerApi(
   app: FastifyInstance,
   users: UserStore,
   security: SecurityStore,
   config: AuthConfig,
-  business?: BusinessStore,
+  product?: ProductStores,
   metrics?: MetricsService,
 ) {
   app.addHook('onRequest', csrfProtection(config));
@@ -26,16 +26,20 @@ export function registerApi(
   );
   const auth = registerAuthentication(app, users, security, config);
   publicAuthRoutes(app, users, security, config);
-
   app.register(async (protectedRoutes) => {
-    // Every route in this scope authenticates before validation and handlers.
+    // Fastify inheritance authenticates every child before validation or effects.
     protectedRoutes.addHook('onRequest', auth.authenticate);
     profileRoutes(protectedRoutes, auth);
-    if (metrics) metricsRoutes(protectedRoutes, auth, metrics);
-    if (business) businessRoutes(protectedRoutes, business, auth);
-    protectedRoutes.register(async (admin) => {
-      admin.addHook('preHandler', auth.requirePermission('admin:read'));
-      adminRoutes(admin, users, security, auth);
-    });
+    if (product) {
+      protectedRoutes.register(async (catalog) =>
+        registerCatalogRoutes(catalog, product.buildings, product.rooms, auth),
+      );
+      protectedRoutes.register(async (client) =>
+        registerClientRoutes(client, product.reservations, auth),
+      );
+    }
+    protectedRoutes.register(async (admin) =>
+      registerAdminRoutes(admin, auth, users, security, product, metrics),
+    );
   });
 }

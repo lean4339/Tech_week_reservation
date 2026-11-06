@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { buildApp } from '../dist/app.js';
 import { MemoryUsers, MemorySecurity } from './helpers.ts';
-import { metricsPeriod } from '../dist/metrics/routes.js';
-import { metricsService, metricsKey } from '../dist/metrics/cache.js';
-import type { Metrics, MetricsPeriod } from '../src/metrics/model.ts';
+import { metricsPeriod } from '../dist/modules/metrics/period.js';
+import { metricsService, metricsKey } from '../dist/modules/metrics/cache.js';
+import type { Metrics, MetricsPeriod } from '../src/modules/metrics/model.ts';
 
 const period = {
   from: '2030-01-01T00:00:00.000Z',

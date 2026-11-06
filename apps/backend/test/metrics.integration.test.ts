@@ -4,12 +4,12 @@ import { randomUUID, randomInt } from 'node:crypto';
 import pg from 'pg';
 import { Redis } from 'ioredis';
 import { migrate } from '../dist/db/migrate.js';
-import { postgresMetrics } from '../dist/metrics/store.js';
+import { postgresMetrics } from '../dist/modules/metrics/store.js';
 import {
   redisMetrics,
   metricsService,
   metricsKey,
-} from '../dist/metrics/cache.js';
+} from '../dist/modules/metrics/cache.js';
 import {
   postgresUsers,
   redisSecurity,

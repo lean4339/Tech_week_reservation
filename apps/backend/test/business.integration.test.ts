@@ -10,7 +10,7 @@ import {
   redisSecurity,
   sessionKey,
 } from '../dist/auth/stores.js';
-import { postgresBusiness } from '../dist/business/store.js';
+import { postgresProduct } from '../dist/db/product-stores.js';
 import { hashPassword } from '../dist/auth/password.js';
 import { headers } from './helpers.ts';
 
@@ -53,7 +53,7 @@ test('business HTTP API with real PostgreSQL and Redis: CRUD, permissions, isola
   const users = postgresUsers(pool),
     security = redisSecurity(redis);
   const app = buildApp({
-    stores: { users, security, business: postgresBusiness(observedPool) },
+    stores: { users, security, product: postgresProduct(observedPool) },
     logger: false,
   });
   t.after(async () => {

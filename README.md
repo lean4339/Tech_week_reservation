@@ -156,3 +156,5 @@ y permisos; “Quitar filtros” vuelve a la vista sin fechas.
 [Métricas y caché Redis: fórmulas, límites y funcionamiento](METRICS.md).
 
 [Auditoría de dependencias / Dependency audit](DEPENDENCY_AUDIT.md).
+
+[Arquitectura del backend / Backend architecture](ARCHITECTURE.md)
