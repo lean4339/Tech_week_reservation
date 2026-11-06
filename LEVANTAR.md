@@ -1,5 +1,7 @@
 # Levantar el proyecto localmente
 
+[Español](LEVANTAR.md) | [English](RUNNING.md)
+
 Esta guía corresponde al setup actual: Next.js y Fastify con TypeScript,
 PostgreSQL y Redis en Docker, ESLint y Prettier. No hace falta Dockerizar
 el frontend ni el backend: ambos se ejecutan con Node.js en tu máquina.

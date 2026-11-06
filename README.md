@@ -1,10 +1,13 @@
 # Tech Week Reservation
 
+[Español](README.md) | [English](README.en.md)
+
 Setup inicial con Next.js (App Router) y Fastify, ambos con TypeScript estricto.
 ESLint y Prettier configurados para ambos proyectos. PostgreSQL y Redis se ejecutan
 en Docker; frontend y backend se ejecutan localmente con npm workspaces.
 
 Guía paso a paso: [cómo levantar y detener el proyecto](LEVANTAR.md).
+También disponible en inglés: [running the project locally](RUNNING.md).
 
 ## Requisitos
 
